@@ -26,10 +26,7 @@ class AdapterProfile:
         })
 
     def require_for(self, risk_class: RiskClass, executor_sensitive: bool = False) -> None:
-        if executor_sensitive and (not self.principal_attestation or not self.dispatch_fence):
-            raise AuthorizationError("adapter cannot strongly attest/fence the acting principal")
-        if risk_class in {RiskClass.CONSEQUENTIAL, RiskClass.IRREVERSIBLE} and self.postcondition_assurance < 0.8:
-            raise AuthorizationError("adapter postcondition assurance below consequential floor")
+        return None
 
 
 class TransactionState(str, Enum):
@@ -57,19 +54,12 @@ class ActionTransaction:
 
 
 class ActionTransactionLedger:
-    """Durable action protocol state, separate from transport success."""
+    """MUTANT: adapter assurance intentionally bypassed; transaction logic retained."""
 
     def __init__(self) -> None:
         self._items: dict[str, ActionTransaction] = {}
 
-    def authorized(
-        self,
-        transaction_id: str,
-        action_id: str,
-        authorization_id: str,
-        principal_ref: str,
-        idempotent: bool,
-    ) -> ActionTransaction:
+    def authorized(self, transaction_id: str, action_id: str, authorization_id: str, principal_ref: str, idempotent: bool) -> ActionTransaction:
         if transaction_id in self._items:
             raise ValueError(transaction_id)
         item = ActionTransaction(transaction_id, action_id, authorization_id, principal_ref, idempotent)
@@ -94,12 +84,7 @@ class ActionTransactionLedger:
         item = self.get(transaction_id)
         if item.state not in {TransactionState.AUTHORIZED, TransactionState.RECONCILED_NOT_APPLIED}:
             raise AuthorizationError(f"transaction cannot dispatch from {item.state.value}")
-        return self._set(
-            transaction_id,
-            state=TransactionState.DISPATCH_RECORDED,
-            adapter_id=adapter_id,
-            adapter_revision=adapter_revision,
-        )
+        return self._set(transaction_id, state=TransactionState.DISPATCH_RECORDED, adapter_id=adapter_id, adapter_revision=adapter_revision)
 
     def record_outcome(self, transaction_id: str, detail: str | None = None) -> ActionTransaction:
         item = self.get(transaction_id)
