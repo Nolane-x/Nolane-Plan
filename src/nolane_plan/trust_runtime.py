@@ -339,14 +339,14 @@ def _reconcile_strong(
         self.identities.current(
             tx.principal_ref,
             now=evidence.observed_at,
-            minimum_assurance=minimum_identity_assurance,
+            minimum_assurance=minimum_assurance,
         )
         if evidence.evidence_id in self.reconciliation_evidence:
             raise AuthorizationError("reconciliation evidence was already consumed")
         reconciled = self.transactions.reconcile_with_evidence(
             tx.id,
             evidence,
-            minimum_assurance=minimum_identity_assurance,
+            minimum_assurance=minimum_assurance,
         )
         self.reconciliation_evidence[evidence.evidence_id] = evidence
         self._record("action.reconciled_evidence", {
