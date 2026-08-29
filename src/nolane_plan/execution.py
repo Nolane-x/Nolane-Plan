@@ -57,19 +57,12 @@ class ActionTransaction:
 
 
 class ActionTransactionLedger:
-    """Durable action protocol state, separate from transport success."""
+    """MUTANT: non-idempotent retry guard intentionally removed."""
 
     def __init__(self) -> None:
         self._items: dict[str, ActionTransaction] = {}
 
-    def authorized(
-        self,
-        transaction_id: str,
-        action_id: str,
-        authorization_id: str,
-        principal_ref: str,
-        idempotent: bool,
-    ) -> ActionTransaction:
+    def authorized(self, transaction_id: str, action_id: str, authorization_id: str, principal_ref: str, idempotent: bool) -> ActionTransaction:
         if transaction_id in self._items:
             raise ValueError(transaction_id)
         item = ActionTransaction(transaction_id, action_id, authorization_id, principal_ref, idempotent)
@@ -94,12 +87,7 @@ class ActionTransactionLedger:
         item = self.get(transaction_id)
         if item.state not in {TransactionState.AUTHORIZED, TransactionState.RECONCILED_NOT_APPLIED}:
             raise AuthorizationError(f"transaction cannot dispatch from {item.state.value}")
-        return self._set(
-            transaction_id,
-            state=TransactionState.DISPATCH_RECORDED,
-            adapter_id=adapter_id,
-            adapter_revision=adapter_revision,
-        )
+        return self._set(transaction_id, state=TransactionState.DISPATCH_RECORDED, adapter_id=adapter_id, adapter_revision=adapter_revision)
 
     def record_outcome(self, transaction_id: str, detail: str | None = None) -> ActionTransaction:
         item = self.get(transaction_id)
@@ -114,11 +102,6 @@ class ActionTransactionLedger:
         return self._set(transaction_id, state=TransactionState.RECONCILIATION_REQUIRED, detail=detail)
 
     def assert_retry_allowed(self, transaction_id: str) -> bool:
-        item = self.get(transaction_id)
-        if item.state == TransactionState.RECONCILIATION_REQUIRED and not item.idempotent:
-            raise AuthorizationError("non-idempotent action requires trusted reconciliation before retry")
-        if item.state in {TransactionState.COMMITTED, TransactionState.RECONCILED_APPLIED}:
-            raise AuthorizationError("action already applied")
         return True
 
     def reconcile(self, transaction_id: str, outcome_applied: bool, trusted: bool) -> ActionTransaction:
