@@ -15,6 +15,8 @@ class ActionIntent:
     parameters: tuple[tuple[str, str], ...] = ()
     preconditions: tuple[str, ...] = ()
     required_capabilities: tuple[str, ...] = ()
+    idempotent: bool = True
+    executor_sensitive: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +52,10 @@ class ActionAuthorization:
     canonical_version: int
     issued_at: int | float
     expires_at: int | float | None = None
+    decision_cut_id: str | None = None
+    capsule_id: str | None = None
+    adapter_id: str | None = None
+    adapter_revision: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +80,10 @@ class AuthorityEngine:
         canonical_version: int,
         now: int | float,
         expires_at: int | float | None = None,
+        decision_cut_id: str | None = None,
+        capsule_id: str | None = None,
+        adapter_id: str | None = None,
+        adapter_revision: int | None = None,
     ) -> ActionAuthorization:
         grant_list = tuple(grants)
         usable = tuple(g for g in grant_list if g.usable(acting_principal_ref, action, now))
@@ -89,8 +99,16 @@ class AuthorityEngine:
             "mission": mission_version,
             "canonical": canonical_version,
             "issued_at": now,
+            "decision_cut_id": decision_cut_id,
+            "capsule_id": capsule_id,
+            "adapter_id": adapter_id,
+            "adapter_revision": adapter_revision,
         }
-        return ActionAuthorization(digest(body)[:24], action.id, action.family, acting_principal_ref, tuple(g.id for g in usable), mission_version, canonical_version, now, expires_at)
+        return ActionAuthorization(
+            digest(body)[:24], action.id, action.family, acting_principal_ref,
+            tuple(g.id for g in usable), mission_version, canonical_version, now,
+            expires_at, decision_cut_id, capsule_id, adapter_id, adapter_revision,
+        )
 
     def dispatch_eligible(
         self,
@@ -100,6 +118,8 @@ class AuthorityEngine:
         mission_version: int,
         canonical_version: int,
         now: int | float,
+        presented_adapter_id: str | None = None,
+        presented_adapter_revision: int | None = None,
     ) -> bool:
         if authorization.acting_principal_ref != presented_principal_ref:
             return False
@@ -107,6 +127,11 @@ class AuthorityEngine:
             return False
         if authorization.expires_at is not None and now > authorization.expires_at:
             return False
+        if authorization.adapter_id is not None:
+            if presented_adapter_id != authorization.adapter_id:
+                return False
+            if presented_adapter_revision != authorization.adapter_revision:
+                return False
         by_id = {g.id: g for g in grants}
         if not authorization.grant_refs:
             return False
