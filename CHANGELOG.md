@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0a1 — 2026-08-30
+
+- Added canonical host/platform `PrincipalAttestation` and durable `PrincipalBindingRevision` identity provenance.
+- Principal identity now fails closed on source-subject collision, weak assurance, expiry, revocation and historical pre-binding use.
+- Added planning-relevant `CommunicationLedger` with `SENT -> DELIVERED -> OBSERVED` semantics; delivery alone never implies recipient knowledge and observation is recipient/time bound.
+- Added `DispatchAttestation` binding authorization, transaction, action, adapter revision and exact canonical principal identity before side effects.
+- Added transaction-bound `ReconciliationEvidence`; strong reconciliation no longer relies on caller-supplied trust booleans.
+- Integrated strong identity/communication/dispatch/reconciliation paths into `PlanKernel` without creating a second correctness writer.
+- Added snapshot schema v3 with exact trust-ledger, dispatch-attestation and reconciliation-evidence restoration while preserving v2 core restore compatibility.
+- Added fail-closed Wave 3 suffix replay for identity and communication trust events with provenance-digest validation and non-retroactive knowledge reconstruction.
+- Added deterministic 12-case Wave 3 adversarial conformance.
+- Added a four-mutation constitutional gate covering identity non-retroactivity, OBSERVED-only knowledge, authorization/binding continuity and execution-evidence snapshot durability.
+- Python 3.11/3.12/3.13 CI now gates unit tests, compile, principal-scope oracle, Wave 2 conformance, Wave 3 conformance, Wave 3 mutation gate and end-to-end demo.
+
 ## 0.2.0a1 — 2026-08-29
 
 - Added prefix-closed `DecisionCutRevision` authority views for causal decision consistency.
