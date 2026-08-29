@@ -14,6 +14,16 @@ class CompletionReport:
     anti_goal_violations: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class BoundCompletionReport:
+    complete: bool
+    missing_success_conditions: tuple[str, ...]
+    open_hard_obligations: tuple[str, ...]
+    anti_goal_violations: tuple[str, ...]
+    artifact_id: str
+    decision_cut_id: str
+
+
 class CompletionVerifier:
     def verify(
         self,
