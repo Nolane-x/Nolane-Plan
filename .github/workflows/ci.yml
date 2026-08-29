@@ -26,5 +26,7 @@ jobs:
         run: python -m compileall -q src
       - name: Principal-scope conformance oracle
         run: python -m nolane_plan conformance
+      - name: Wave 2 adversarial conformance
+        run: python -m nolane_plan.wave2_conformance
       - name: End-to-end demo
         run: python -m nolane_plan demo --root .ci-demo
