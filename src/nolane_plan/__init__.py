@@ -8,4 +8,4 @@ from .types import RiskClass
 install_runtime_extensions(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
-__version__ = "0.1.0a1"
+__version__ = "0.2.0a1"
