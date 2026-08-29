@@ -16,20 +16,13 @@ class ArtifactBinding:
 
 
 class ArtifactRegistry:
-    """Authority-time artifact freshness and causal visibility registry."""
+    """MUTANT: historical-cut visibility guard intentionally removed."""
 
     def __init__(self, freshness: FreshnessDomainLedger) -> None:
         self.freshness = freshness
         self._items: dict[str, ArtifactBinding] = {}
 
-    def register(
-        self,
-        artifact_id: str,
-        kind: str,
-        produced_sequence: int,
-        dependency_domains: tuple[str, ...],
-        decision_cut_id: str,
-    ) -> ArtifactBinding:
+    def register(self, artifact_id: str, kind: str, produced_sequence: int, dependency_domains: tuple[str, ...], decision_cut_id: str) -> ArtifactBinding:
         if artifact_id in self._items:
             raise ValueError(f"artifact already registered: {artifact_id}")
         stamp = DependencyStamp.capture(self.freshness, dependency_domains)
@@ -45,8 +38,6 @@ class ArtifactRegistry:
 
     def usable_at_cut(self, artifact_id: str, cut: DecisionCutRevision) -> bool:
         item = self.get(artifact_id)
-        if not cut.includes_sequence(item.produced_sequence):
-            return False
         if not item.dependency_stamp.current(self.freshness):
             return False
         for domain, generation in item.dependency_stamp.generations:
