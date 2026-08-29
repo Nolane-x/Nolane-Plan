@@ -23,6 +23,7 @@ class DecisionCapsule:
     action_ids: tuple[str, ...]
     dependency_digest: str
     expires_at: int | float | None = None
+    decision_cut_id: str = ""
 
 
 class CapsuleCompiler:
@@ -39,6 +40,7 @@ class CapsuleCompiler:
         evidence_watermark: int,
         plan_snapshot_version: int = 1,
         expires_at: int | float | None = None,
+        decision_cut_id: str = "",
     ) -> DecisionCapsule:
         if partition.principal_ref != principal_ref:
             raise CapsuleError("partition principal mismatch")
@@ -53,6 +55,7 @@ class CapsuleCompiler:
             "canonical": canonical_version,
             "evidence_watermark": evidence_watermark,
             "actions": action_ids,
+            "decision_cut_id": decision_cut_id,
         })
         body = {
             "recipient": principal_ref,
@@ -61,11 +64,13 @@ class CapsuleCompiler:
             "canonical": canonical_version,
             "dependency": dependency,
             "decision_time": partition.decision_time,
+            "decision_cut_id": decision_cut_id,
         }
         return DecisionCapsule(
             digest(body)[:24], principal_ref, partition.digest, partition.access_profile_revision,
             plan_snapshot_version, mission.version, canonical_version, evidence_watermark,
             partition.decision_time, partition.item_ids, tuple(action_ids), dependency, expires_at,
+            decision_cut_id,
         )
 
     def validate(
@@ -76,6 +81,7 @@ class CapsuleCompiler:
         mission: MissionContract,
         canonical_version: int,
         now: int | float | None = None,
+        expected_decision_cut_id: str | None = None,
     ) -> bool:
         if capsule.recipient_principal_ref != principal_ref:
             raise CapsuleError("cross-principal capsule reuse is forbidden")
@@ -88,6 +94,8 @@ class CapsuleCompiler:
             raise CapsuleError("capsule mission version is stale")
         if capsule.canonical_version != canonical_version:
             raise CapsuleError("capsule canonical state is stale")
+        if expected_decision_cut_id is not None and capsule.decision_cut_id != expected_decision_cut_id:
+            raise CapsuleError("capsule decision cut mismatch")
         if capsule.expires_at is not None and now is not None and now > capsule.expires_at:
             raise CapsuleError("capsule expired")
         return True
