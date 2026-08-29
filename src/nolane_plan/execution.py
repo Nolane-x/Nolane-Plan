@@ -76,6 +76,12 @@ class ActionTransactionLedger:
         self._items[item.id] = item
         return item
 
+    def restore(self, item: ActionTransaction) -> ActionTransaction:
+        if item.id in self._items:
+            raise ValueError(item.id)
+        self._items[item.id] = item
+        return item
+
     def get(self, transaction_id: str) -> ActionTransaction:
         return self._items[transaction_id]
 
