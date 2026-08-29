@@ -59,12 +59,26 @@ def _bind_principal(
             "principal_ref": principal_ref,
             "binding_id": binding.binding_id,
             "binding_revision": binding.binding_revision,
-            "attestation_id": binding.attestation_id,
-            "source": binding.source,
-            "source_subject": binding.source_subject,
-            "assurance": binding.assurance,
-            "identity_generation": self.freshness.generation(identity_domain),
+            "binding_created_at": binding.created_at,
+            "attestation": {
+                "attestation_id": attestation.attestation_id,
+                "canonical_principal_ref": attestation.canonical_principal_ref,
+                "source": attestation.source,
+                "source_subject": attestation.source_subject,
+                "revision": attestation.revision,
+                "issued_at": attestation.issued_at,
+                "valid_until": attestation.valid_until,
+                "assurance": attestation.assurance,
+                "session_ref": attestation.session_ref,
+                "provenance_digest": attestation.provenance_digest,
+            },
+            "allowed_tags": sorted(profile.allowed_tags),
             "access_revision": profile.revision,
+            "freshness_generations": {
+                identity_domain: self.freshness.generation(identity_domain),
+                principal_domain: self.freshness.generation(principal_domain),
+                "plan": self.freshness.generation("plan"),
+            },
         })
         return binding
 
@@ -75,14 +89,19 @@ def _revoke_principal_attestation(self, attestation_id: str, *, revoked_at: int 
         self.identities.revoke(attestation_id, revoked_at=revoked_at)
         principal_ref = attestation.canonical_principal_ref
         identity_domain = _identity_domain(principal_ref)
+        principal_domain = f"principal:{principal_ref}"
         self.freshness.ensure(identity_domain)
         self.plan_snapshot_version += 1
-        self._bump(identity_domain, f"principal:{principal_ref}", "plan")
+        self._bump(identity_domain, principal_domain, "plan")
         self._record("principal.identity_revoked", {
             "principal_ref": principal_ref,
             "attestation_id": attestation_id,
             "revoked_at": revoked_at,
-            "identity_generation": self.freshness.generation(identity_domain),
+            "freshness_generations": {
+                identity_domain: self.freshness.generation(identity_domain),
+                principal_domain: self.freshness.generation(principal_domain),
+                "plan": self.freshness.generation("plan"),
+            },
         })
 
 
@@ -127,9 +146,12 @@ def _transfer_information(
             "receipt_id": receipt.id,
             "source_principal_ref": source_principal_ref,
             "recipient_principal_ref": recipient_principal_ref,
-            "item_id": item_id,
+            "semantic_payload_refs": list(receipt.semantic_payload_refs),
+            "semantic_payload_digest": receipt.semantic_payload_digest,
             "sent_at": sent_at,
             "valid_until": valid_until,
+            "access_condition": access_condition,
+            "provenance": receipt.provenance,
         })
 
         if delivered_at is not None:
@@ -164,15 +186,19 @@ def _transfer_information(
             )
             self.principals.observe(recipient_principal_ref, item_id, observed_at)
             communication_domain = _communication_domain(recipient_principal_ref)
+            principal_domain = f"principal:{recipient_principal_ref}"
             self.freshness.ensure(communication_domain)
-            self._bump(communication_domain, f"principal:{recipient_principal_ref}")
+            self._bump(communication_domain, principal_domain)
             self._record("communication.observed", {
                 "receipt_id": receipt.id,
                 "recipient_principal_ref": recipient_principal_ref,
                 "item_id": item_id,
                 "observed_at": observed_at,
                 "evidence_ref": observation_evidence_ref,
-                "communication_generation": self.freshness.generation(communication_domain),
+                "freshness_generations": {
+                    communication_domain: self.freshness.generation(communication_domain),
+                    principal_domain: self.freshness.generation(principal_domain),
+                },
             })
         return receipt
 
@@ -315,7 +341,10 @@ def _dispatch_strong(
             "dispatch_attestation_id": dispatch_attestation.attestation_id,
             "adapter_id": adapter_id,
             "adapter_revision": int(adapter_revision),
+            "observed_at": dispatch_attestation.observed_at,
             "assurance": dispatch_attestation.assurance,
+            "provenance": dispatch_attestation.provenance,
+            "provenance_digest": dispatch_attestation.provenance_digest,
         })
         return self.dispatch(
             authorization_id,
@@ -352,12 +381,16 @@ def _reconcile_strong(
         self._record("action.reconciled_evidence", {
             "transaction_id": tx.id,
             "authorization_id": authorization_id,
+            "action_id": evidence.action_id,
             "evidence_id": evidence.evidence_id,
             "outcome_applied": evidence.outcome_applied,
             "principal_ref": evidence.canonical_principal_ref,
             "adapter_id": evidence.adapter_id,
             "adapter_revision": evidence.adapter_revision,
+            "source": evidence.source,
+            "observed_at": evidence.observed_at,
             "assurance": evidence.assurance,
+            "provenance_digest": evidence.provenance_digest,
         })
         if evidence.outcome_applied:
             self._commit_action_patch(tx.id, dict(state_patch or {}), None)
