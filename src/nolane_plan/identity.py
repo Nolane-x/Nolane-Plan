@@ -173,6 +173,8 @@ class PrincipalIdentityLedger:
         binding = revisions[-1]
         attestation = self._attestations[binding.attestation_id]
         revoked_at = self._revoked_at.get(attestation.attestation_id)
+        if now < binding.created_at:
+            raise IdentityError("principal binding was not yet established at this decision boundary")
         if revoked_at is not None and now >= revoked_at:
             raise IdentityError("current principal attestation is revoked")
         if now < attestation.issued_at:
