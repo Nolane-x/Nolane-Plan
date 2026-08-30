@@ -126,6 +126,28 @@ class Wave6HandoffLivenessTests(unittest.TestCase):
         )
         self.assertNotEqual(self.evaluate(old, rebased).status, HandoffProgressStatus.STRICT_PROGRESS)
 
+    def test_horizon_advance_cannot_launder_new_critical_debt_or_workload_regression(self):
+        old = self.rank(
+            unresolved_critical_debt_count=2,
+            debt_equivalence_refs=("debt-a", "debt-b"),
+            remaining_synthesis_workload=5.0,
+            absolute_executable_horizon=100.0,
+        )
+        regressed = self.rank(
+            rank_id="rank-b",
+            revision_id="rank-b-r1",
+            unresolved_critical_debt_count=3,
+            debt_equivalence_refs=("debt-a", "debt-b", "debt-new"),
+            remaining_synthesis_workload=20.0,
+            absolute_executable_horizon=106.0,
+            semantic_continuation_digest="semantic-b",
+            created_at=2.0,
+        )
+        cert = self.evaluate(old, regressed, ordinary_stutter_count=2)
+        self.assertEqual(cert.status, HandoffProgressStatus.NO_PROGRESS)
+        self.assertIn("progress_rank_regression", cert.blocker_refs)
+        self.assertNotIn("absolute_executable_horizon_advanced", cert.progress_dimensions)
+
     def test_recovery_stutter_is_separate_and_bounded(self):
         old = self.rank()
         new = self.rank(rank_id="rank-b", revision_id="rank-b-r1", created_at=2.0)
