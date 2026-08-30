@@ -195,6 +195,7 @@ _SCHEDULABILITY_EVENTS = (
 _WAVE7_SPECS = (
     _base("semantic.regime_revised", "semantic_regime_revised"),
     _base("migration.schema_root_switched", "migration_schema_root_switched"),
+    _base("compaction.representation_committed", "compaction_representation_committed"),
 )
 
 
