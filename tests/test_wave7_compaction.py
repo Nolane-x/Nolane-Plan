@@ -70,6 +70,9 @@ class Wave7CompactionTests(unittest.TestCase):
             provenance_refs=("proof:root@1", "evidence:verified"),
             debt_refs=("debt:verify@1",),
         )
+        # A real journaled canonical mutation separates immutable revisions so
+        # the fixture respects the same sequence monotonicity as production.
+        kernel.revise_mission(objective="compact safely with refreshed proof")
         second = kernel._register_lineage(
             object_family="DerivedArtifact",
             logical_id="artifact:proofed",
