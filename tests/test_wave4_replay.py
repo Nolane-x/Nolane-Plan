@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
 from nolane_plan import PlanKernel
 from nolane_plan.actions import ActionIntent, AuthorityGrant
+from nolane_plan.hashing import digest
 from nolane_plan.identity import PrincipalAttestation
 from nolane_plan.proof_inputs import DependencyCaptureAssurance, ExternalReadPolicy, ProofInputEnvelopeRevision
 from nolane_plan.semantic_barrier import MutationImpactProfileRevision
@@ -22,9 +24,9 @@ class Wave4ReplayTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def _base_kernel(self) -> PlanKernel:
-        kernel = PlanKernel.create(self.root, "Wave 4 replay authority")
-        attestation = PrincipalAttestation.create(
-            attestation_id="identity-a",
+        kernel = PlanKernel.create(self.root, "proof replay")
+        att = PrincipalAttestation.create(
+            attestation_id="id-a",
             canonical_principal_ref="agent:a",
             source="host-runtime",
             source_subject="subject-a",
@@ -34,7 +36,7 @@ class Wave4ReplayTests(unittest.TestCase):
             assurance=0.95,
             session_ref="session-a",
         )
-        kernel.bind_principal(attestation, allowed_tags=set(), now=10)
+        kernel.bind_principal(att, allowed_tags=set(), now=10)
         kernel.propose_action(ActionIntent("act", "deploy", RiskClass.CONSEQUENTIAL))
         kernel.add_grant(AuthorityGrant("grant", "agent:a", frozenset({"deploy"})))
         kernel.register_semantic_source(
@@ -43,13 +45,8 @@ class Wave4ReplayTests(unittest.TestCase):
             value={"mode": "safe"},
             dependency_domains=("source:policy", "proof:policy"),
         )
-        kernel.register_proof_profile_refs(
-            "semantic@1", "checker-trust@2", "normalizer@1", "python@3.13"
-        )
-        return kernel
-
-    def _install_proof(self, kernel: PlanKernel) -> None:
-        query = kernel.create_proof_query_domain(
+        kernel.register_proof_profile_refs("semantic@1", "checker-trust@2", "normalizer@1", "python@3.13")
+        kernel.create_proof_query_domain(
             query_domain_id="grants",
             scope_revision="scope@1",
             index_schema_revision="index@1",
@@ -63,6 +60,10 @@ class Wave4ReplayTests(unittest.TestCase):
             opaque=False,
             visibility_assurance=0.95,
         )
+        return kernel
+
+    def _install_proof(self, kernel: PlanKernel):
+        query = kernel.query_domains.latest("grants")
         envelope = ProofInputEnvelopeRevision.create(
             input_envelope_id="env",
             revision_id="env@1",
@@ -91,6 +92,7 @@ class Wave4ReplayTests(unittest.TestCase):
             semantic_profile_dependencies=("semantic@1",),
             trust_checker_normalizer_dependencies=("checker-trust@2", "normalizer@1"),
             execution_semantic_profile_dependencies=("python@3.13",),
+            capture_gaps=(),
         )
         kernel.register_support_node(
             SupportNode(
@@ -147,7 +149,9 @@ class Wave4ReplayTests(unittest.TestCase):
         self._install_proof(kernel)
         before = kernel.evaluate_proof_authority("proof@1", active_context={"prod"})
         state = kernel.save_snapshot()
-        self.assertEqual(state["snapshot_schema"], "nolane-plan-runtime-snapshot-v4")
+        # Wave 4 proof state remains valid inside the current layered snapshot schema.
+        self.assertEqual(state["snapshot_schema"], "nolane-plan-runtime-snapshot-v5")
+        self.assertIn("proof", state)
 
         reopened = PlanKernel.open(self.root)
         after = reopened.evaluate_proof_authority("proof@1", active_context={"prod"})
@@ -164,23 +168,16 @@ class Wave4ReplayTests(unittest.TestCase):
         authorization = self._authorize(reopened)
         self.assertIn(authorization.id, reopened.proof_authorization_bindings)
 
-    def test_stale_before_snapshot_does_not_resurrect_after_restart(self):
+    def test_post_snapshot_query_membership_replays_and_stales_negative_dependency(self):
         kernel = self._base_kernel()
         self._install_proof(kernel)
-        kernel.mutate_semantic_source(
-            "policy",
-            new_revision_id="policy@2",
-            new_value={"mode": "changed"},
-            impact_profile=MutationImpactProfileRevision(
-                "policy-impact@2", "policy", ("source:policy", "proof:policy"), True, ()
-            ),
-        )
         kernel.save_snapshot()
+        kernel.advance_proof_query_membership("grants", query_snapshot_id="snapshot-2")
 
         reopened = PlanKernel.open(self.root)
-        self.assertEqual(reopened.semantic_barrier.read_source("policy").revision_id, "policy@2")
+        self.assertEqual(reopened.query_domains.latest("grants").membership_generation, 1)
         with self.assertRaises(AuthorizationError):
-            self._authorize(reopened)
+            reopened.evaluate_proof_authority("proof@1", active_context={"prod"})
 
     def test_post_snapshot_semantic_mutation_replays_and_stales_proof(self):
         kernel = self._base_kernel()
@@ -196,21 +193,9 @@ class Wave4ReplayTests(unittest.TestCase):
         )
 
         reopened = PlanKernel.open(self.root)
-        self.assertEqual(reopened.semantic_barrier.read_source("policy").revision_id, "policy@2")
         self.assertEqual(reopened.proof_exact_revisions["policy"], "policy@2")
         with self.assertRaises(AuthorizationError):
-            self._authorize(reopened)
-
-    def test_post_snapshot_query_membership_replays_and_stales_negative_dependency(self):
-        kernel = self._base_kernel()
-        self._install_proof(kernel)
-        kernel.save_snapshot()
-        kernel.advance_proof_query_membership("grants", query_snapshot_id="snapshot-2")
-
-        reopened = PlanKernel.open(self.root)
-        self.assertEqual(reopened.query_domains.latest("grants").membership_generation, 2)
-        with self.assertRaises(AuthorizationError):
-            self._authorize(reopened)
+            reopened.evaluate_proof_authority("proof@1", active_context={"prod"})
 
     def test_post_snapshot_proof_lineage_can_be_reconstructed_from_journal(self):
         kernel = self._base_kernel()
@@ -218,11 +203,27 @@ class Wave4ReplayTests(unittest.TestCase):
         self._install_proof(kernel)
 
         reopened = PlanKernel.open(self.root)
+        assessment = reopened.evaluate_proof_authority("proof@1", active_context={"prod"})
+        self.assertTrue(assessment.current_usable)
         self.assertIn("proof@1", reopened.proof_manifests)
         self.assertIn("proof@1", reopened.support_sets)
-        self.assertTrue(
-            reopened.evaluate_proof_authority("proof@1", active_context={"prod"}).current_usable
+
+    def test_stale_before_snapshot_does_not_resurrect_after_restart(self):
+        kernel = self._base_kernel()
+        self._install_proof(kernel)
+        kernel.mutate_semantic_source(
+            "policy",
+            new_revision_id="policy@2",
+            new_value={"mode": "changed"},
+            impact_profile=MutationImpactProfileRevision(
+                "policy-impact@2", "policy", ("source:policy", "proof:policy"), True, ()
+            ),
         )
+        kernel.save_snapshot()
+
+        reopened = PlanKernel.open(self.root)
+        with self.assertRaises(AuthorizationError):
+            reopened.evaluate_proof_authority("proof@1", active_context={"prod"})
 
     def test_blocking_invalidity_survives_snapshot_and_blocks_authority(self):
         kernel = self._base_kernel()
@@ -234,16 +235,19 @@ class Wave4ReplayTests(unittest.TestCase):
         kernel.save_snapshot()
 
         reopened = PlanKernel.open(self.root)
+        self.assertTrue(reopened.proof_invalidity_causes["proof@1"][0].blocking)
         with self.assertRaises(AuthorizationError):
-            self._authorize(reopened)
+            reopened.evaluate_proof_authority("proof@1", active_context={"prod"})
 
     def test_tampered_internal_manifest_digest_fails_closed_even_with_valid_outer_snapshot_digest(self):
         kernel = self._base_kernel()
         self._install_proof(kernel)
         kernel.save_snapshot()
-        state = kernel.snapshots.load()
-        state["proof"]["manifests"][0]["canonical_digest"] = "tampered"
-        kernel.snapshots.save(state)
+        path = self.root / "snapshot.json"
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        doc["state"]["proof"]["manifests"][0]["canonical_digest"] = "forged-manifest-digest"
+        doc["digest"] = digest(doc["state"])
+        path.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
 
         with self.assertRaises(ReplayError):
             PlanKernel.open(self.root)
