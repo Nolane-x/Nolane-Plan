@@ -7,6 +7,7 @@ from .policy_runtime import install_policy_runtime
 from .proof_recovery import install_proof_recovery
 from .proof_runtime import install_proof_runtime
 from .resume import install_runtime_extensions
+from .schedulability_runtime import install_schedulability_runtime
 from .seal_lifecycle import install_seal_lifecycle
 from .trust_recovery import install_trust_recovery
 from .trust_runtime import install_trust_runtime
@@ -20,6 +21,7 @@ install_proof_runtime(PlanKernel)
 install_proof_recovery(PlanKernel)
 install_policy_runtime(PlanKernel)
 install_policy_recovery(PlanKernel)
+install_schedulability_runtime(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
 __version__ = "0.5.0a1"
