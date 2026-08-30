@@ -146,7 +146,7 @@ class Wave4ReplayTests(unittest.TestCase):
         kernel = self._base_kernel()
         self._install_proof(kernel)
         before = kernel.evaluate_proof_authority("proof@1", active_context={"prod"})
-        state = kernel.save_snapshot()
+        state = kernel.save_snapshot_v6()
         self.assertEqual(state["snapshot_schema"], "nolane-plan-runtime-snapshot-v6")
 
         reopened = PlanKernel.open(self.root)
