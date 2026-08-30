@@ -238,7 +238,15 @@ class HandoffLivenessEvaluator:
         if new.remaining_unprepared_boundaries < old.remaining_unprepared_boundaries:
             progress.append("unprepared_boundaries_reduced")
         horizon_advance = new.absolute_executable_horizon - old.absolute_executable_horizon
-        if horizon_advance >= policy.minimum_horizon_advance and horizon_advance > 0:
+        horizon_rank_non_regressive = (
+            new.unresolved_critical_debt_count <= old.unresolved_critical_debt_count
+            and new.remaining_synthesis_workload <= old.remaining_synthesis_workload
+        )
+        if (
+            horizon_rank_non_regressive
+            and horizon_advance >= policy.minimum_horizon_advance
+            and horizon_advance > 0
+        ):
             progress.append("absolute_executable_horizon_advanced")
         if new.minimum_preparedness_at_next_boundary > old.minimum_preparedness_at_next_boundary:
             progress.append("next_boundary_preparedness_improved")
