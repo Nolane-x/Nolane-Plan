@@ -125,8 +125,6 @@ def _replay_base_entry(kernel, entry) -> bool:
     payload = dict(entry.payload)
 
     if event == "mission.created":
-        # Creation is normally inside the snapshot prefix. A suffix creation is
-        # only valid if it exactly describes the already-rooted mission.
         doc = _require_doc(payload, "mission", event)
         current = kernel.mission.current
         if int(doc["version"]) != current.version or str(doc["objective"]) != current.objective:
@@ -212,6 +210,25 @@ def _replay_base_entry(kernel, entry) -> bool:
         )
         kernel.evidence.add(record)
         _restore_meta(kernel, payload)
+        _register_object_lineage(
+            kernel,
+            entry,
+            object_family="EvidenceRecord",
+            logical_id=record.id,
+            semantic_payload={
+                "id": record.id,
+                "claim": record.claim,
+                "polarity": record.polarity.value,
+                "source_id": record.source_id,
+                "lineage_root": record.lineage_root,
+                "observed_at": record.observed_at,
+                "valid_until": record.valid_until,
+                "assurance": record.assurance,
+                "revoked": record.revoked,
+                "revocation_reason": record.revocation_reason,
+            },
+            provenance_refs=("kernel:evidence-ledger",),
+        )
         return True
 
     if event == "future.family_added":
@@ -303,6 +320,21 @@ def _replay_base_entry(kernel, entry) -> bool:
             raise ReplayError("adapter capability digest mismatch during replay")
         kernel.adapters[profile.adapter_id] = profile
         _restore_meta(kernel, payload)
+        _register_object_lineage(
+            kernel,
+            entry,
+            object_family="AdapterProfile",
+            logical_id=profile.adapter_id,
+            semantic_payload={
+                "adapter_id": profile.adapter_id,
+                "revision": profile.revision,
+                "principal_attestation": profile.principal_attestation,
+                "dispatch_fence": profile.dispatch_fence,
+                "postcondition_assurance": profile.postcondition_assurance,
+                "capability_digest": profile.capability_digest,
+            },
+            provenance_refs=("kernel:adapter-registry",),
+        )
         return True
 
     if event == "region.registered":
@@ -312,6 +344,18 @@ def _replay_base_entry(kernel, entry) -> bool:
             raise ReplayError("duplicate region during replay")
         kernel.regions.append(region)
         _restore_meta(kernel, payload)
+        _register_object_lineage(
+            kernel,
+            entry,
+            object_family="CandidateRegion",
+            logical_id=region.id,
+            semantic_payload={
+                "id": region.id,
+                "required_facts": region.required_facts,
+                "decision_signature": region.decision_signature,
+            },
+            provenance_refs=("kernel:region-registry",),
+        )
         return True
 
     if event == "resource.reserved":
@@ -684,8 +728,6 @@ def _replay_entry(kernel, entry) -> None:
     if spec.classification == ReplayEventClass.SNAPSHOT_BOUNDARY:
         return
 
-    # Canonical lineage is registered after relocation/recovery side effects in
-    # the live mutation wrapper. Flush it before the next unrelated event.
     if entry.event_type not in {"state.relocated", "recovery.model_class_uncertain"}:
         _flush_pending_canonical(kernel)
 
@@ -703,8 +745,6 @@ def _replay_entry(kernel, entry) -> None:
         _restore_meta(kernel, dict(entry.payload))
         return
 
-    # Trust/proof/policy layers already own exact historical reducers. Their
-    # registry classification delegates here rather than duplicating semantics.
     _replay_policy_entry(kernel, entry)
     _restore_meta(kernel, dict(entry.payload))
 
