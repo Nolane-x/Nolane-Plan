@@ -300,6 +300,40 @@ def _obligation_payload(obligation) -> dict[str, Any]:
     }
 
 
+def _evidence_payload(record) -> dict[str, Any]:
+    return {
+        "id": record.id,
+        "claim": record.claim,
+        "polarity": record.polarity.value,
+        "source_id": record.source_id,
+        "lineage_root": record.lineage_root,
+        "observed_at": record.observed_at,
+        "valid_until": record.valid_until,
+        "assurance": record.assurance,
+        "revoked": record.revoked,
+        "revocation_reason": record.revocation_reason,
+    }
+
+
+def _adapter_payload(profile) -> dict[str, Any]:
+    return {
+        "adapter_id": profile.adapter_id,
+        "revision": profile.revision,
+        "principal_attestation": profile.principal_attestation,
+        "dispatch_fence": profile.dispatch_fence,
+        "postcondition_assurance": profile.postcondition_assurance,
+        "capability_digest": profile.capability_digest,
+    }
+
+
+def _region_payload(region) -> dict[str, Any]:
+    return {
+        "id": region.id,
+        "required_facts": region.required_facts,
+        "decision_signature": region.decision_signature,
+    }
+
+
 def _bind_authorization_lineage(self, authorization) -> AuthorizationLineageBinding:
     # Pre-v7 snapshots restore canonical objects directly rather than through the
     # Wave-7 mutation wrappers. A new authorization after such a restore
@@ -434,10 +468,13 @@ def install_lineage_runtime(kernel_cls) -> None:
         return
 
     original_init = kernel_cls.__init__
+    original_add_evidence = kernel_cls.add_evidence
     original_add_future_family = kernel_cls.add_future_family
     original_add_obligation = kernel_cls.add_obligation
     original_propose_action = kernel_cls.propose_action
     original_add_grant = kernel_cls.add_grant
+    original_register_adapter = kernel_cls.register_adapter
+    original_register_region = kernel_cls.register_region
     original_revise_mission = kernel_cls.revise_mission
     original_commit_action_patch = kernel_cls._commit_action_patch
     original_authorize = kernel_cls.authorize
@@ -446,6 +483,18 @@ def install_lineage_runtime(kernel_cls) -> None:
     def __init__(self, *args, **kwargs):
         original_init(self, *args, **kwargs)
         _install_state(self)
+
+    def add_evidence(self, record):
+        with self._writer_lock:
+            out = original_add_evidence(self, record)
+            _register_lineage(
+                self,
+                object_family="EvidenceRecord",
+                logical_id=record.id,
+                semantic_payload=_evidence_payload(record),
+                provenance_refs=("kernel:evidence-ledger",),
+            )
+            return out
 
     def add_future_family(self, family):
         with self._writer_lock:
@@ -495,6 +544,30 @@ def install_lineage_runtime(kernel_cls) -> None:
             )
             return out
 
+    def register_adapter(self, profile):
+        with self._writer_lock:
+            out = original_register_adapter(self, profile)
+            _register_lineage(
+                self,
+                object_family="AdapterProfile",
+                logical_id=profile.adapter_id,
+                semantic_payload=_adapter_payload(profile),
+                provenance_refs=("kernel:adapter-registry",),
+            )
+            return out
+
+    def register_region(self, region):
+        with self._writer_lock:
+            out = original_register_region(self, region)
+            _register_lineage(
+                self,
+                object_family="CandidateRegion",
+                logical_id=region.id,
+                semantic_payload=_region_payload(region),
+                provenance_refs=("kernel:region-registry",),
+            )
+            return out
+
     def revise_mission(self, **changes):
         with self._writer_lock:
             previous = self.lineage.current("MissionRevision", "mission")
@@ -538,10 +611,13 @@ def install_lineage_runtime(kernel_cls) -> None:
             return original_dispatch(self, authorization_id, *args, **kwargs)
 
     kernel_cls.__init__ = __init__
+    kernel_cls.add_evidence = add_evidence
     kernel_cls.add_future_family = add_future_family
     kernel_cls.add_obligation = add_obligation
     kernel_cls.propose_action = propose_action
     kernel_cls.add_grant = add_grant
+    kernel_cls.register_adapter = register_adapter
+    kernel_cls.register_region = register_region
     kernel_cls.revise_mission = revise_mission
     kernel_cls._commit_action_patch = _commit_action_patch
     kernel_cls.authorize = authorize
