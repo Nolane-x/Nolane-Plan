@@ -8,6 +8,7 @@ from nolane_plan import PlanKernel
 from nolane_plan.actions import ActionIntent, AuthorityGrant
 from nolane_plan.execution import TransactionState
 from nolane_plan.lineage import SemanticRegimeKind
+from nolane_plan.lineage_recovery import canonical_semantic_digest
 from nolane_plan.migration import (
     FieldMigrationDisposition,
     IdentityMapping,
@@ -181,6 +182,27 @@ class Wave7MigrationTests(unittest.TestCase):
         self.assertIn(auth.id, result.invalidated_authorization_ids)
         self.assertIn(auth.id, kernel.migration_recheck_required_authorizations)
         self.assertFalse(hasattr(result, "authorization_id"))
+
+    def test_post_snapshot_migration_replays_exact_target_revision_and_digest(self):
+        root = Path(tempfile.mkdtemp())
+        kernel = PlanKernel.create(root, "ship", ("done",))
+        kernel.save_snapshot()
+        manifest = self.make_manifest()
+        result = kernel.apply_semantic_migration(manifest, now=2)
+        live_digest = canonical_semantic_digest(kernel)
+
+        reopened = PlanKernel.open(root)
+
+        self.assertEqual(result.target_schema_revision, manifest.target_schema_revision)
+        self.assertEqual(
+            reopened.lineage.current_regime(SemanticRegimeKind.SCHEMA).revision_id,
+            manifest.target_schema_revision,
+        )
+        self.assertEqual(canonical_semantic_digest(reopened), live_digest)
+        self.assertEqual(
+            reopened.migration_history[-1].target_schema_revision,
+            manifest.target_schema_revision,
+        )
 
     def test_migration_refuses_ambiguous_external_action_without_verified_bridge(self):
         root = Path(tempfile.mkdtemp())
