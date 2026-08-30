@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0a1 — 2026-08-30
+
+- Added canonical `ControlPlaneResourceRevision`, `ReactionResourceDemand`, `ReactionJobContract` and reservation semantics so verifier/model/rate-limit/human/kernel-writer capacity can participate in policy reaction guarantees instead of being treated as free parallel infrastructure.
+- Added `ReactionSchedulabilityCertificate` with explicit RS0–RS4 levels, joint cohort analysis, coexistence/mutual-exclusion handling, overload witnesses, model-adequacy debt and exact job/resource revision freshness. Per-job feasibility no longer implies a strong joint guarantee.
+- Extended the planning budget governor with protected deadline-critical capacity. Mandatory work plus protected reaction demand fails closed on oversubscription; speculative/background expansion cannot borrow reserved correctness capacity before release.
+- Added `ContinuationProgressRank`, `HandoffProgressPolicy` and `HandoffLivenessCertificate` for repeated `SAFE_HANDOFF`. Handoff count, total deferral, ordinary/recovery stutter and grounded absolute deadlines are bounded; semantic renaming and equivalent-debt churn do not count as progress.
+- Hardened handoff progress against HL03 laundering: executable-horizon advance is not credited when critical continuation debt or remaining synthesis workload regresses, and the certificate exposes stable `progress_rank_regression` diagnostics.
+- Added `HandoffStabilityContract` and `EdgeActivationAssessment` for activation-time generation, permission, reservation/lock, external-writer and open-side-effect freshness. Opacity remains UNKNOWN and explicit refresh is required before stale child entry can become usable.
+- Added `ExecutablePolicyCoverageAssessment` so policy totality over modeled support remains distinct from transition/observation-model adequacy and residual/open-world closure.
+- Added `OptionIndependenceCertificate` and robust preparedness assessment. Redundancy uplift is failure-set-relative and collapses under shared credentials, network paths, evidence lineage, control-plane overlap, common causes or infeasible co-activation.
+- Added revisioned dormant-branch resurrection semantics. Protected catastrophic/sole-route/unique-hedge/information-rich branches cannot be probability-pruned, and resurrection requires current revalidation of mission, assumption/evidence, transition, temporal, resource/capability/authority and risk lineage.
+- Integrated Wave-6 prerequisites into `PlanKernel` under the exact existing correctness-writer lock. `authorize_schedulable_policy(...)` rechecks current resource/job/certificate/coverage/liveness/stability/independence lineage and delegates to `authorize_sealed_policy(...)`; Wave-6 objects never mint an independent action authority.
+- Added snapshot schema v6 with canonical Wave-6 codecs, immutable revision history plus current logical pointers, exact suffix replay, fail-closed unknown events and bounded v5 migration with empty Wave-6 state rather than invented certificates. Internal digest tampering and stale-resource restart resurrection are rejected.
+- Added the exact 43-case v0.6 failure-taxonomy oracle: CP01–12, HL01–12, EF01–08, TM01–05 and OI01–06.
+- Added a 12-mutation Wave-6 constitutional gate covering joint-guarantee promotion, coexistence optimism, resource freshness, protected capacity, stutter/deadline/debt progress, edge refresh, totality laundering, common-mode independence and replay/restart integrity.
+- Python 3.11/3.12/3.13 CI now gates 334 unit/integration tests, compile, the original `108 -> 0` principal oracle, Wave 2–6 conformance, Wave 3–6 mutation gates and the end-to-end demo. Wave-6 evidence is `43/43` conformance and `12/12` mutations killed on every matrix entry.
+- Wave 6 remains a bounded reference-runtime closure. Common immutable lineage, full migration/replay exhaustion, graph-compaction lineage, property/metamorphic/chaos/differential exhaustion, production hardening, formal global correctness and empirical superiority remain outside this release claim.
+
 ## 0.5.0a1 — 2026-08-30
 
 - Added principal-scoped `InformationPartitionRevision`, `DecisionEpoch`, `RevealEvent` and `ObservationFrontierRevision` semantics with explicit non-anticipativity checking; runtime-global or other-principal reveal state cannot silently justify a decision split.

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nolane-plan"
-version = "0.5.0a1"
+version = "0.6.0a1"
 description = "Proof-carrying strategic future-space runtime for AI agents"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,8 +14,7 @@ dependencies = []
 keywords = ["ai-agents", "planning", "multi-agent", "verification", "runtime", "future-space"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
+  "License :: OS Independent",
 ]
 
 [project.scripts]
