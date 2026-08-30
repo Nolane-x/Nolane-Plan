@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
-from dataclasses import replace
 from pathlib import Path
 
 from nolane_plan import PlanKernel
@@ -36,6 +35,25 @@ class Wave5PolicyReplayTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def _continuation(self, prefix: str) -> ContinuationContract:
+        return ContinuationContract.create(
+            continuation_contract_id=f"{prefix}-continuation",
+            revision_id=f"{prefix}-continuation@1",
+            boundary_region_ref="boundary@1",
+            mission_revision=self.kernel.mission.current.version,
+            certified_prefix_horizon=100,
+            terminal_semantics=TerminalSemantics.MISSION_COMPLETE,
+            required_next_preparedness_profile="prep@next",
+            remaining_subgoal_obligation_refs=(),
+            refinement_dependencies=("world-model@1",),
+            required_action_space_capability_discovery=("deploy",),
+            estimated_refinement_latency=5,
+            latest_safe_refinement_time=120,
+            fallback_if_refinement_misses_boundary="recovery@1",
+            continuation_debt_refs=(),
+            assurance_profile="CHECKED",
+        )
 
     def _build_policy_objects(self, prefix: str = "p"):
         principal = "agent:a"
@@ -197,23 +215,7 @@ class Wave5PolicyReplayTests(unittest.TestCase):
             created_sequence=self.kernel.writer_sequence,
             validity_regime="runtime@1",
         )
-        continuation = ContinuationContract.create(
-            continuation_contract_id=f"{prefix}-continuation",
-            revision_id=f"{prefix}-continuation@1",
-            boundary_region_ref="boundary@1",
-            mission_revision=self.kernel.mission.current.version,
-            certified_prefix_horizon=100,
-            terminal_semantics=TerminalSemantics.MISSION_COMPLETE,
-            required_next_preparedness_profile="prep@next",
-            remaining_subgoal_obligation_refs=(),
-            refinement_dependencies=("world-model@1",),
-            required_action_space_capability_discovery=("deploy",),
-            estimated_refinement_latency=5,
-            latest_safe_refinement_time=120,
-            fallback_if_refinement_misses_boundary="recovery@1",
-            continuation_debt_refs=(),
-            assurance_profile="CHECKED",
-        )
+        continuation = self._continuation(prefix)
         executability = PolicyExecutabilityEvaluator.evaluate(
             assessment_id=f"{prefix}-exec",
             revision_id=f"{prefix}-exec@1",
@@ -249,6 +251,37 @@ class Wave5PolicyReplayTests(unittest.TestCase):
             accepted_debt_refs=(),
         )
         return frontier, partition, epoch, node, selection, sufficiency, seal, executability
+
+    def _partial_executability(self, base, prefix: str = "partial"):
+        manifest = base.closure_manifest
+        return PolicyExecutabilityEvaluator.evaluate(
+            assessment_id=f"{prefix}-exec",
+            revision_id=f"{prefix}-exec@1",
+            scope_ref=base.scope_ref,
+            mission_revision=manifest.mission_revision,
+            plan_snapshot_version=manifest.plan_snapshot_version,
+            policy_revision=manifest.policy_revision,
+            information_partition_revision=manifest.information_partition_revision,
+            action_space_revision=manifest.action_space_revision,
+            bound_snapshot_revisions=dict(manifest.bound_snapshot_revisions),
+            nonanticipativity_valid=manifest.nonanticipativity_valid,
+            recall_level=manifest.recall_level,
+            totality_mode=manifest.totality_mode,
+            edge_certificates_valid=manifest.edge_certificates_valid,
+            shared_resource_commitments_feasible=manifest.shared_resource_commitments_feasible,
+            information_capability_preserved=manifest.information_capability_preserved,
+            reaction_class=manifest.reaction_class,
+            required_reaction_class=manifest.required_reaction_class,
+            preparedness_level=manifest.preparedness_level,
+            required_preparedness_level=manifest.required_preparedness_level,
+            composition_status=manifest.composition_status,
+            route_guarantee_met=manifest.route_guarantee_met,
+            continuation=self._continuation(prefix),
+            requested_horizon=manifest.requested_horizon,
+            seal_status=manifest.seal_status,
+            debt_refs=("debt:open",),
+            accepted_debt_refs=(),
+        )
 
     def _register_policy_objects(self, objects):
         frontier, partition, epoch, node, selection, sufficiency, seal, executability = objects
@@ -291,10 +324,9 @@ class Wave5PolicyReplayTests(unittest.TestCase):
 
     def test_stale_seal_and_partial_executability_do_not_promote_after_restart(self):
         objects = self._register_policy_objects(self._build_policy_objects())
-        seal = replace(objects[6], revision_id="p-seal@stale", status=SealStatus.STALE)
-        partial = replace(
-            objects[7], assessment_id="p-exec-partial", revision_id="p-exec@partial", status=ExecutabilityStatus.EXEC_PARTIAL
-        )
+        seal = objects[6].invalidate(SealStatus.STALE, revision_id="p-seal@stale")
+        partial = self._partial_executability(objects[7])
+        self.assertEqual(partial.status, ExecutabilityStatus.EXEC_PARTIAL)
         self.kernel.register_plan_seal(seal)
         self.kernel.register_policy_executability(partial)
         self.kernel.save_snapshot()
