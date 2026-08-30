@@ -297,7 +297,7 @@ class Wave5PolicyReplayTests(unittest.TestCase):
 
     def test_v5_snapshot_round_trip_preserves_policy_registry_and_exact_digests(self):
         objects = self._register_policy_objects(self._build_policy_objects())
-        state = self.kernel.save_snapshot()
+        state = self.kernel.save_snapshot_v6()
         self.assertEqual(state["snapshot_schema"], "nolane-plan-runtime-snapshot-v6")
 
         reopened = PlanKernel.open(self.root)
