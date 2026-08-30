@@ -50,6 +50,24 @@ class Wave5SealTests(unittest.TestCase):
             allowed_worlds=worlds,
         )
 
+    def _seal(self, revision_id="seal@1"):
+        return SealCompiler.issue(
+            seal_id="seal",
+            revision_id=revision_id,
+            plan_root_revision="plan@1",
+            mission_revision=1,
+            canonical_state_version=1,
+            action_closure_refs=("deploy:red", "node@1", "proof@1"),
+            sufficiency=self._sufficiency(),
+            proof_contexts=(self._component("checker", ("w1",)),),
+            required_assurance=ArtifactAssurance.CHECKED,
+            accepted_debt_refs=(),
+            compiler_pass_manifest=("P0", "P1", "P2"),
+            invariant_digest="invariants@1",
+            created_sequence=21,
+            validity_regime="runtime@1",
+        )
+
     def test_assurance_order_forbids_self_promotion(self):
         self.assertLess(ArtifactAssurance.DRAFT.rank, ArtifactAssurance.CHECKED.rank)
         with self.assertRaises(ValueError):
@@ -97,7 +115,6 @@ class Wave5SealTests(unittest.TestCase):
         self.assertNotIn("far-future-draft@9", seal.action_closure_refs)
 
     def test_pairwise_compatible_but_globally_inconsistent_contexts_fail(self):
-        # A∩B={w2}, A∩C={w1}, B∩C={w3}; A∩B∩C=∅.
         a = self._component("A", ("w1", "w2"))
         b = self._component("B", ("w2", "w3"))
         c = self._component("C", ("w1", "w3"))
@@ -200,6 +217,22 @@ class Wave5SealTests(unittest.TestCase):
         a = SealCompiler.issue(revision_id="seal@1", action_closure_refs=("deploy:red", "node@1", "proof@1"), **common)
         b = SealCompiler.issue(revision_id="seal@2", action_closure_refs=("deploy:red", "node@1", "proof@2"), **common)
         self.assertNotEqual(a.canonical_digest, b.canonical_digest)
+
+    def test_seal_invalidation_is_monotonic_and_recomputes_digest(self):
+        sealed = self._seal("seal@1")
+        stale = sealed.invalidate(SealStatus.STALE, revision_id="seal@2")
+        self.assertEqual(stale.status, SealStatus.STALE)
+        self.assertEqual(stale.revision_id, "seal@2")
+        self.assertNotEqual(stale.canonical_digest, sealed.canonical_digest)
+
+        revoked = stale.invalidate(SealStatus.REVOKED, revision_id="seal@3")
+        self.assertEqual(revoked.status, SealStatus.REVOKED)
+        self.assertNotEqual(revoked.canonical_digest, stale.canonical_digest)
+
+        with self.assertRaises(ValueError):
+            stale.invalidate(SealStatus.SEALED, revision_id="seal@4")
+        with self.assertRaises(ValueError):
+            revoked.invalidate(SealStatus.STALE, revision_id="seal@5")
 
 
 if __name__ == "__main__":
