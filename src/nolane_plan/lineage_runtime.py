@@ -301,16 +301,47 @@ def _obligation_payload(obligation) -> dict[str, Any]:
 
 
 def _bind_authorization_lineage(self, authorization) -> AuthorizationLineageBinding:
+    # Pre-v7 snapshots restore canonical objects directly rather than through the
+    # Wave-7 mutation wrappers. A new authorization after such a restore
+    # materializes exact roots from those restored objects. It does not invent
+    # historical parents and does not promote an old authorization.
+    mission_lineage = _register_lineage(
+        self,
+        object_family="MissionRevision",
+        logical_id="mission",
+        semantic_digest=_mission_semantic_digest(self),
+        provenance_refs=("snapshot-legacy-materialization", "kernel:mission-ledger"),
+        mission_dependency=False,
+    )
+    canonical_lineage = _register_lineage(
+        self,
+        object_family="CanonicalState",
+        logical_id="canonical-state",
+        semantic_digest=_canonical_state_semantic_digest(self),
+        provenance_refs=("snapshot-legacy-materialization", "kernel:canonical-state"),
+    )
     action = self.actions[authorization.action_id]
-    action_lineage = self.lineage.current("ActionIntent", action.id)
+    action_lineage = _register_lineage(
+        self,
+        object_family="ActionIntent",
+        logical_id=action.id,
+        semantic_payload=_action_payload(action),
+        provenance_refs=("snapshot-legacy-materialization", "kernel:action-registry"),
+    )
     grant_lineages = tuple(
-        self.lineage.current("AuthorityGrant", grant_id).revision_id
+        _register_lineage(
+            self,
+            object_family="AuthorityGrant",
+            logical_id=grant_id,
+            semantic_payload=_grant_payload(self.grants[grant_id]),
+            provenance_refs=("snapshot-legacy-materialization", "kernel:authority-registry"),
+        ).revision_id
         for grant_id in authorization.grant_refs
     )
     binding = AuthorizationLineageBinding.create(
         authorization_id=authorization.id,
-        mission_revision_id=self.lineage.current("MissionRevision", "mission").revision_id,
-        canonical_state_revision_id=self.lineage.current("CanonicalState", "canonical-state").revision_id,
+        mission_revision_id=mission_lineage.revision_id,
+        canonical_state_revision_id=canonical_lineage.revision_id,
         action_revision_id=action_lineage.revision_id,
         grant_revision_ids=grant_lineages,
         regime_revisions=(
