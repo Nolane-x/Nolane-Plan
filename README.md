@@ -2,78 +2,99 @@
 
 **Strategic Future-Space Runtime for AI Agents — v0.15 reference implementation line**
 
-Nolane Plan is not a longer task list and not a generate-plan/execute/replan wrapper. It treats planning as compilation of a bounded strategic future space: future families, decision-relevant strategic states, obligations, uncertainty, residual/unknown worlds, evidence dependencies, convergence, temporal reaction constraints and principal-scoped execution authority.
+Nolane Plan is not a longer task list and not a generate-plan/execute/replan wrapper. It treats planning as compilation of a bounded strategic future space: future families, decision-relevant strategic states, obligations, uncertainty, residual/unknown worlds, evidence dependencies, contingent policies, temporal reaction constraints and principal-scoped execution authority.
 
-This repository contains a **model-free, standard-library-first reference runtime** derived from the Nolane Plan v0.15 architecture specification. It is designed to make semantic mistakes executable and testable rather than leaving them as conventions for an implementation to guess.
+This repository contains a **model-free, standard-library-first reference runtime** derived from the Nolane Plan v0.15 architecture specification. Its purpose is to make semantic shortcuts executable, falsifiable and replayable rather than leaving them as conventions for an implementation to guess.
 
 ## Runtime line
 
-`0.2.0a1` is the Wave 2 runtime-closure line. It keeps one serialized correctness writer while making causal cuts, proof freshness, adapter assurance, ambiguous side-effect reconciliation and verified crash resume part of the executable authority path.
+`0.5.0a1` is the Wave-5 executable-policy-closure line. It preserves one serialized correctness writer while adding principal-information-feasible contingent policy, frozen advisory selection, decision sufficiency, PlanSeal, recall/totality/stitch certificates, bounded reaction/readiness semantics, exact-scope executability and snapshot-v5 replay to the authority path.
+
+Wave 5 does **not** claim joint control-plane schedulability, repeated handoff liveness, activation-time edge stability, distributed correctness writers, formal global correctness or empirical superiority. Those remain outside this release's bounded claim surface.
 
 ## Core architecture
 
 ```text
-                speculative/model workers
-              /          |            \
-      principal A    principal B    verifier
-              \          |            /
-               +----------------------+
-                          |
-                 serialized PlanKernel
-                          |
-        +-----------------+------------------+
-        |                 |                  |
- canonical state   strategic future     evidence/freshness
-        |                 |                  |
-        +--------- Decision Capsules --------+
-                          |
-                    Decision Cut
-                          |
-               principal-bound authorization
-                          |
-              adapter capability binding
-                          |
-             durable dispatch transaction
-                          |
-                    external effect
-                          |
-           verify / reconcile ambiguous outcome
-                          |
-                   canonical commit
+                   speculative/model workers
+                 /          |            \
+         principal A    principal B    verifier
+                 \          |            /
+                  +----------------------+
+                             |
+                    serialized PlanKernel
+                             |
+        +--------------------+--------------------+
+        |                    |                    |
+  canonical state     evidence / proof      trust / identity
+        |                    |                    |
+        +------------- Decision Cut --------------+
+                             |
+               principal-scoped DecisionEpoch
+                             |
+                 information partition/frontier
+                             |
+                 sealed contingent policy IR
+                             |
+                  frozen advisory selection
+                             |
+        sufficiency + PlanSeal + executability
+                             |
+               proof-carrying authorization
+                             |
+             principal/adapter dispatch fence
+                             |
+                       external effect
+                             |
+            verify / reconcile ambiguous outcome
+                             |
+                      canonical commit
 ```
 
 ### Constitutional properties implemented
 
 - canonical reality/state outranks model narrative;
-- mission versions invalidate stale completion/decision artifacts;
-- `NULL_WORLD` is always representable;
+- mission versions invalidate stale completion and decision artifacts;
+- `NULL_WORLD` remains representable;
 - principal identity is distinct from role/model/process/session/grant;
-- kernel-global knowledge is not automatically principal-available knowledge;
+- runtime-global knowledge is not automatically principal-available knowledge;
 - Decision Capsules are recipient-, information-scope- and Decision-Cut-bound;
 - hydration cannot escalate a principal's information scope;
-- proof artifacts stale immediately when bound freshness generations change;
-- an artifact committed after a historical Decision Cut is not visible retroactively;
-- ActionAuthorization binds the exact acting principal and may bind an exact adapter revision;
-- executor-sensitive consequential actions require adapter principal attestation and a dispatch fence;
-- dispatch is durably recorded before the external adapter is invoked;
-- ambiguous external outcomes move to `RECONCILIATION_REQUIRED`;
-- non-idempotent ambiguous actions cannot blind-retry before trusted reconciliation;
-- transport success alone is never canonical commit without postcondition verification;
-- universal/absence claims require complete, current query snapshots;
-- preparedness and reaction-window constraints can block consequential authorization;
-- strategic relocation preserves ambiguity; `UNLOCATED` enters model-class uncertainty;
-- completion is a cut/freshness-bound proof artifact rather than a timeless boolean;
-- snapshot restore verifies digest, hash-chain and journal-prefix binding;
-- unknown post-snapshot mutation semantics fail closed during replay;
-- correctness mutations remain under one serialized writer.
+- proof artifacts stale when bound semantic/query/freshness dependencies change;
+- historical Decision Cuts do not see future artifacts retroactively;
+- strong identity is host/platform-bound rather than model-narrated;
+- inter-principal knowledge requires recipient/time-grounded observation evidence;
+- dispatch and strong reconciliation bind exact principal, transaction and adapter evidence;
+- policy splits must respect principal-relative information equivalence before grounded reveal;
+- `SelectionRecord` is advisory only; hard vetoes cannot be resurrected by score;
+- PlanSeal cannot self-promote assurance, hide unaccepted debt or revive after monotonic invalidation;
+- recursive recall compares downstream decision signatures rather than only the current action;
+- supported outcomes require exact valid successor/reconciliation/residual handling; generic catch-alls are not totality proofs;
+- parent→child policy edges require explicit stitch/refinement compatibility;
+- IA1 possible timing is not treated as IA2 bounded reaction guarantee;
+- information-destroying actions are blocked unless a robust information-independent continuation is explicit;
+- deferred/unknown continuation does not silently extend the certified executable horizon;
+- `EXEC_BOUNDED` requires a current exact-scope closure rather than score/confidence promotion;
+- sealed-policy authorization still delegates through existing proof and identity authority binders;
+- dispatch is durably recorded before an external adapter is invoked;
+- non-idempotent ambiguous effects cannot blind-retry before evidence-bound reconciliation;
+- snapshot restore verifies outer and policy-internal digests, hash-chain/prefix binding and supported suffix reducers;
+- stale selection/seal/executability state does not resurrect on replay;
+- correctness-significant mutations remain under one serialized writer.
 
 ## Quick start
 
 ```bash
+python -m pip install -e .
 python -m nolane_plan conformance
 python -m nolane_plan.wave2_conformance
-python -m nolane_plan demo --root .demo-plan
+python -m nolane_plan.wave3_conformance
+python -m nolane_plan.wave4_conformance
+python -m nolane_plan.wave5_conformance
+python scripts/wave3_mutation_gate.py
+python scripts/wave4_mutation_gate.py
+python scripts/wave5_mutation_gate.py
 python -m unittest discover -s tests -v
+python -m nolane_plan demo --root .demo-plan
 ```
 
 Resume a previously saved runtime:
@@ -84,7 +105,7 @@ from nolane_plan import PlanKernel
 kernel = PlanKernel.open(".demo-plan")
 ```
 
-`PlanKernel.open()` is a correctness operation, not a permissive loader. The snapshot must verify, its stored journal head must identify a real prefix of the current journal, and every post-snapshot event must have a known replay reducer.
+`PlanKernel.open()` is a correctness operation, not a permissive loader. The snapshot must verify, its stored journal head must identify a real prefix of the current journal, policy/proof/trust internal digests must reconstruct canonically, and every correctness-significant post-snapshot event must have a known replay reducer for the implemented surface.
 
 The original principal-scope conformance command reproduces:
 
@@ -98,7 +119,14 @@ v0.14 total collisions             108
 v0.15 challenger collisions         0
 ```
 
-Wave 2 adds a separate deterministic 10-case adversarial suite covering causal-cut leakage, authority-time freshness, adapter assurance, non-idempotent reconciliation, universal-query completeness, reaction schedulability, resource conflict, unknown-world relocation, completion-proof freshness and snapshot/journal-prefix binding.
+Additional deterministic bounded gates currently include:
+
+- Wave 2 runtime-closure adversarial suite: 10 cases;
+- Wave 3 external-trust adversarial suite: 12 cases, plus 4 constitutional mutations;
+- Wave 4 proof-dependency/support adversarial suite: 14 cases, plus 7 constitutional mutations;
+- Wave 5 executable-policy adversarial suite: 29 cases, plus 13 constitutional mutations.
+
+The `0.5.0a1` release head is gated on Python 3.11, 3.12 and 3.13 by 248 unit/integration tests, compile, the original principal oracle, all Wave 2–5 adversarial suites, Wave 3–5 mutation gates and the end-to-end demo.
 
 ## Package map
 
@@ -107,33 +135,42 @@ Wave 2 adds a separate deterministic 10-case adversarial suite covering causal-c
 | `kernel` | serialized correctness writer and end-to-end lifecycle |
 | `decision_cut` | prefix-closed causal authority views |
 | `artifacts` | authority-time proof/artifact freshness and cut visibility |
+| `trust_runtime` / `trust_recovery` | host-grounded identity, communication, dispatch/reconciliation evidence and replay |
+| `proof_runtime` / `proof_recovery` | proof dependency/support authority integration and replay |
+| `policy_information` | principal-scoped partitions, epochs, reveals, frontiers and non-anticipativity |
+| `policy_ir` | contingent policy nodes and policy-level coherence |
+| `selection` | frozen selection transactions and advisory freshness-bound records |
+| `seals` / `seal_lifecycle` | sufficiency, proof-context composition, PlanSeal and monotonic invalidation |
+| `policy_certificates` | recursive recall, totality and policy-edge stitch certificates |
+| `policy_readiness` | reaction envelopes, preparedness, information capability and continuation |
+| `policy_executability` | exact-scope `EXEC_*` closure assessment |
+| `policy_runtime` / `policy_recovery` | sealed-policy authority integration and snapshot-v5 replay |
 | `execution` | adapter capability profiles and durable action transactions |
-| `resume` | snapshot schema v2, verified restore and fail-closed suffix replay |
+| `resume` | lower-layer verified restore and fail-closed suffix replay |
 | `mission` | versioned mission contract |
-| `principals` | access/delivery partitions and principal-bound decision epochs |
-| `evidence` | polarity, provenance lineage, freshness-sensitive support |
-| `future` / `compiler` | future families, NULL_WORLD, strategic lattice, convergence |
+| `principals` | base access/delivery partitions |
+| `evidence` | polarity, provenance lineage and freshness-sensitive support |
+| `future` / `compiler` | future families, `NULL_WORLD`, strategic lattice and convergence |
 | `obligations` | condition-centric strategic obligations |
 | `capsule` | bounded recipient-scoped decision projections |
 | `actions` | grants, principal/cut/adapter-bound authorization and receipts |
-| `action_lifecycle` | strict proposal→verification→commit transaction state machine |
-| `temporal` | reaction and handoff liveness contracts |
+| `action_lifecycle` | proposal→verification→commit transaction semantics |
+| `temporal` | base reaction and handoff contracts |
 | `recovery` | model-class uncertainty quarantine |
-| `freshness` / `dependency` | dependency generation binding and artifact invalidation |
-| `query` | universal/absence enumeration completeness receipts |
-| `pruning` | safe dormancy and revalidation-based resurrection |
-| `preparedness` | horizon/irreversibility-sensitive preparedness floors |
-| `policy` | principal-relative non-anticipativity checking |
+| `freshness` / `dependency` | dependency generation binding and invalidation |
+| `query` | universal/absence enumeration completeness |
+| `pruning` | dormancy and revalidation-based resurrection |
+| `preparedness` | base horizon/irreversibility preparedness floors |
 | `resources` | shared/exclusive commitment conflict checking |
 | `relocation` | LOCATED/AMBIGUOUS/UNLOCATED strategic relocation |
 | `budget` | mandatory-first bounded planning work allocation |
 | `verification` | success/obligation/anti-goal completion proof surface |
 | `persistence` | hash-chained journal and verified snapshots |
 | `conformance` | bounded v0.15 principal-scope falsification/oracle suite |
-| `wave2_conformance` | deterministic runtime-closure adversarial suite |
+| `wave2_conformance` … `wave5_conformance` | wave-specific adversarial falsification suites |
 
 ## Research status
 
-This repository is a **reference implementation**, not a claim that Nolane Plan is empirically superior to existing planners, POMDP systems, HTN planners, MCTS systems, or production agent frameworks. Bounded conformance tests are strong evidence against specific semantic shortcuts; they are not a global proof of correctness.
+This repository is a **reference implementation**, not a claim that Nolane Plan is empirically superior to existing planners, POMDP systems, HTN planners, MCTS systems or production agent frameworks. Bounded conformance and mutation tests are evidence against specific semantic shortcuts; they are not a global formal proof.
 
-The next valid semantic revision should be driven by executable counterexample, differential implementation mismatch, adapter experiment, replay/migration conflict, or bounded/formal trace—not by adding prose because more features are imaginable.
+The next closure wave is Wave 6: joint schedulability/liveness and future-temporal-resource integration. New semantics should continue to be driven by executable counterexamples, differential mismatch, replay/migration conflict, adapter experiments or bounded/formal traces rather than by prose expansion alone.
