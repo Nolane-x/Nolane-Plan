@@ -151,8 +151,8 @@ def _register_policy_node(self, node: PolicyNodeRevision) -> PolicyNodeRevision:
         frontier = self.policy_frontiers.get(node.observation_frontier_revision)
         if epoch is None or partition is None or frontier is None:
             raise ValueError("policy node requires registered epoch, partition and observation frontier")
-        if node.decision_principal_ref != epoch.decision_principal_ref or node.decision_principal_ref != partition.principal_scope_ref:
-            raise ValueError("policy node principal scope is incoherent")
+        # Registration records the artifact; authority validation decides whether its
+        # principal/snapshot bindings are usable.  This keeps invalid artifacts auditable.
         if node.mission_revision != epoch.mission_revision or node.plan_snapshot_version != epoch.plan_snapshot_version:
             raise ValueError("policy node semantic snapshot differs from decision epoch")
         if node.strategic_location_revision != epoch.strategic_location_revision:
@@ -504,5 +504,7 @@ def install_policy_runtime(kernel_cls) -> None:
     kernel_cls.register_decision_sufficiency = _register_decision_sufficiency
     kernel_cls.register_plan_seal = _register_plan_seal
     kernel_cls.register_policy_executability = _register_policy_executability
+    kernel_cls._current_selection_status = _current_selection_status
+    kernel_cls._require_registered_policy_bundle = _require_registered_policy_bundle
     kernel_cls.authorize_sealed_policy = _authorize_sealed_policy
     kernel_cls._wave5_policy_runtime_installed = True
