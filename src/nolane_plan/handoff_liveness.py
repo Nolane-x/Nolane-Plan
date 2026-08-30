@@ -317,6 +317,7 @@ class HandoffLivenessEvaluator:
             blockers.append("mandatory_preparedness_floor_missed")
         elif rank_regression_blockers:
             status = HandoffProgressStatus.NO_PROGRESS
+            blockers.append("progress_rank_regression")
             blockers.extend(rank_regression_blockers)
         elif progress:
             status = HandoffProgressStatus.STRICT_PROGRESS
