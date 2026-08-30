@@ -15,7 +15,7 @@ from .future import FutureFamily
 from .hashing import digest
 from .mission import MissionContract, MissionLedger
 from .obligations import ObligationStatus, StrategicObligation
-from .persistence import HashJournal, SnapshotStore
+from .persistence import HashJournal, JournalEntry, SnapshotStore
 from .principals import AccessProfile, DeliveryRecord, InformationItem
 from .recovery import RecoveryMode, RecoveryState
 from .relocation import CandidateRegion, LocationStatus, StrategicLocationRevision
@@ -354,6 +354,8 @@ def _find_snapshot_prefix(entries, journal_head: str) -> int:
 
 
 def _replay_suffix(kernel, entries) -> None:
+    if isinstance(entries, JournalEntry):
+        entries = (entries,)
     for entry in entries:
         event = entry.event_type
         payload = entry.payload
