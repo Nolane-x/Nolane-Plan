@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0a1 — 2026-08-30
+
+- Added `ProofInputEnvelopeRevision` with explicit dependency-capture assurance and a hidden-read firewall; self-reported/opaque capture cannot claim strong completeness.
+- Added canonical `QueryDomainRevision` history with separate membership and result-sensitivity generations, plus filter/schema/alias/visibility/snapshot identity for absence and universal claims.
+- Added `ProofDependencyManifestRevision` and `DependencyFreshnessVector` binding exact revisions, freshness generations, query-domain digests, semantic/trust/execution profiles and capture gaps.
+- Added bounded-DNF `SupportAlternativeSetRevision` semantics with conjunctive clauses, alternative justifications, grounded-root cycle detection and independent-root floors.
+- Separated positive support from blocking invalidity so `no blocker` never manufactures authority and active blockers override otherwise valid support.
+- Added `SemanticClosureBarrier` sharing the exact kernel writer lock; canonical source mutation and all affected generation advances linearize in one critical section.
+- Added proof-carrying kernel authorization through `authorize_proof_carrying`, which rechecks current capture, dependency, query, profile, support and invalidity semantics before issuing authority.
+- Added snapshot schema v4 preserving semantic sources, proof inputs, query histories, dependency manifests, support graphs, invalidity causes and proof-authorization lineage with internal digest verification.
+- Added fail-closed Wave 4 suffix replay for proof semantic sources, query-domain changes, manifests, support lineage, invalidity state and proof authorization bindings.
+- Stale proof authority cannot resurrect across restart; post-snapshot semantic/query drift is replayed before authority is re-evaluated.
+- Added deterministic 14-case Wave 4 adversarial conformance covering capture, query freshness, dependency freshness, support algebra, blocking invalidity, kernel authority and replay.
+- Added a seven-mutation constitutional gate covering capture assurance, query revision freshness, independent grounding, blocking invalidity, semantic freshness, kernel manifest reuse and replay manifest integrity.
+- Python 3.11/3.12/3.13 CI now gates Wave 4 adversarial conformance and the Wave 4 mutation gate in addition to all prior Wave 1-3 release gates.
+
 ## 0.3.0a1 — 2026-08-30
 
 - Added canonical host/platform `PrincipalAttestation` and durable `PrincipalBindingRevision` identity provenance.

@@ -22,23 +22,23 @@ Legend: `GREEN` = on a tested correctness path; `PARTIAL` = primitive exists but
 | Inter-principal planning-relevant delivery/observation evidence | GREEN | W3 |
 | Dispatch-time principal attestation object | GREEN | W3 |
 | Executing-principal reconciliation evidence | GREEN | W3 |
-| `DecisionCutRevision` causal/knowledge frontier | GREEN/PARTIAL | W4 expands full cut dimensions |
+| `DecisionCutRevision` causal/knowledge frontier | GREEN/PARTIAL | W5 expands sealed policy/cut binding |
 | Knowledge-time / no retroactive artifact injection | GREEN | existing + W3 identity/communication hardening |
-| Authority-time dependency freshness | GREEN | existing |
-| `ProofInputEnvelopeRevision` | MISSING | W4 |
-| Dependency-capture assurance / hidden-read defense | MISSING | W4 |
-| `ProofDependencyManifestRevision` | PARTIAL (`DependencyManifest`) | W4 |
-| Query-domain membership revision for absence/universal claims | PARTIAL | W4 |
-| SupportAlternativeSet / conjunctive clauses / grounded support | MISSING | W4 |
-| Blocking-invalidity vs positive-support distinction | MISSING | W4 |
-| Semantic closure barrier (source mutation + generation advance) | PARTIAL | W4 |
-| Replay-derived support/freshness reconstruction | PARTIAL | W4/W7 |
+| Authority-time dependency freshness | GREEN | existing + W4 proof hardening |
+| `ProofInputEnvelopeRevision` | GREEN | W4 |
+| Dependency-capture assurance / hidden-read defense | GREEN | W4 |
+| `ProofDependencyManifestRevision` | GREEN | W4 |
+| Query-domain membership revision for absence/universal claims | GREEN | W4 |
+| SupportAlternativeSet / conjunctive clauses / grounded support | GREEN | W4 |
+| Blocking-invalidity vs positive-support distinction | GREEN | W4 |
+| Semantic closure barrier (source mutation + generation advance) | GREEN | W4 |
+| Replay-derived support/freshness reconstruction | GREEN for Wave-4 proof lineage / PARTIAL globally | W4/W7 |
 | `DecisionEpoch` full principal/cut/policy binding | PARTIAL | W5 |
 | Reveal events / principal-relative observation frontier | PARTIAL | W5 |
 | `PolicyNodeRevision` contingent policy graph | PARTIAL | W5 |
 | `SelectionRecord` with admissibility/Pareto/risk/debt refs | MISSING | W5 |
 | PlanSeal / immutable proof-bearing decision seal | MISSING | W5 |
-| Proof-carrying `ActionAuthorization` bundle | PARTIAL | W5 |
+| Proof-carrying `ActionAuthorization` bundle | PARTIAL (proof lineage integrated; seal/policy bundle pending) | W5 |
 | Decision sufficiency / capsule exclusion certificates | MISSING | W5 |
 | Preparedness levels and irreversible-horizon floor | GREEN/PARTIAL | W5/W6 |
 | Reaction-window schedulability | GREEN | existing |
@@ -59,6 +59,7 @@ Legend: `GREEN` = on a tested correctness path; `PARTIAL` = primitive exists but
 | Schema/world-model/environment-regime versioning | PARTIAL | W7 |
 | Snapshot/journal integrity and prefix binding | GREEN | existing |
 | Trust-bearing snapshot/replay semantics | GREEN | W3 |
+| Proof-bearing snapshot/replay semantics | GREEN | W4 |
 | Full semantic replay coverage | PARTIAL | W7 |
 | Migration contracts across schema versions | MISSING | W7 |
 | Graph compaction lineage | MISSING | W7 |
@@ -67,6 +68,7 @@ Legend: `GREEN` = on a tested correctness path; `PARTIAL` = primitive exists but
 | v0.14 projection collision oracle `108 -> 0` | GREEN | existing |
 | Wave-2 adversarial conformance | GREEN | existing |
 | Wave-3 adversarial conformance + constitutional mutations | GREEN | W3 |
+| Wave-4 adversarial conformance + constitutional mutations | GREEN | W4 |
 | Property/metamorphic/chaos/differential conformance | PARTIAL | W8 |
 | Real benchmark worlds / empirical superiority | RESEARCH | W8 measurement only |
 | Distributed correctness writers / consensus | BOUNDARY | not v0.15 |
@@ -76,7 +78,7 @@ Legend: `GREEN` = on a tested correctness path; `PARTIAL` = primitive exists but
 ## Exhaustion order
 
 1. **Wave 3 — External Trust Anchor Closure — GREEN for reference-runtime scope**: canonical principal attestations, communication receipts, dispatch attestation, reconciliation evidence, trust snapshot/replay/freshness integration.
-2. **Wave 4 — Proof Dependency & Support Closure**: proof input envelopes, capture assurance, query membership, support alternatives, semantic closure barrier.
+2. **Wave 4 — Proof Dependency & Support Closure — GREEN for reference-runtime scope**: proof input envelopes, capture assurance, query membership/result-sensitivity revisions, proof dependency manifests, bounded-DNF support alternatives, blocking-invalidity separation, semantic closure barrier, proof-carrying kernel authority, proof snapshot/replay and Wave-4 adversarial/mutation gates.
 3. **Wave 5 — Sealed Contingent Policy Closure**: full decision epochs, reveal/observation frontiers, policy nodes, SelectionRecord, PlanSeal, proof-carrying authorization and capsule sufficiency/exclusion.
 4. **Wave 6 — Future/Temporal/Resource Closure**: survival/convergence metrics, branch dormancy/resurrection, handoff liveness, richer resource capacity, integrated budgets and relocation.
 5. **Wave 7 — Durable Lineage & Migration Closure**: common immutable lineage schema, environment/world/schema versions, full replay reducers, migrations and compaction lineage.
@@ -95,7 +97,24 @@ Wave 3 is considered GREEN only for the bounded reference-runtime scope exercise
 - four deliberate constitutional mutations are killed by the focused test suite;
 - CI exercises Python 3.11, 3.12 and 3.13.
 
-This does **not** upgrade the separate `Full semantic replay coverage` row to GREEN. Events and strategic objects outside the Wave-3 trust surface remain part of W7 replay exhaustion.
+## Wave 4 verification surface
+
+Wave 4 is considered GREEN only for the bounded proof-dependency/support reference-runtime scope exercised by the repository gates:
+
+- strong correctness artifacts bind an explicit proof input envelope and capture-assurance floor; self-report/opacity cannot silently become strong completeness;
+- absence/universal dependencies bind canonical query-domain revisions with both membership and result-sensitivity generations;
+- proof manifests bind exact revisions, freshness domains, query digests and semantic/trust/execution profiles, and any capture gap blocks strong reuse;
+- support is bounded DNF with conjunctive leaves, alternative clauses, grounding-root/cycle checks and independent-root floors;
+- positive support and blocking invalidity remain distinct authority dimensions;
+- semantic-source mutation and affected freshness generation advances share the exact kernel correctness-writer lock;
+- proof-carrying authorization rechecks manifest freshness and support under that same writer lock before authority is created;
+- snapshot schema v4 preserves proof lineage with internal canonical digest verification and fail-closed suffix replay;
+- stale proof authority does not resurrect after restart, including post-snapshot semantic/query drift;
+- 14 deterministic adversarial Wave-4 cases pass;
+- seven deliberate constitutional mutations are killed by focused tests;
+- CI exercises Python 3.11, 3.12 and 3.13.
+
+This does **not** upgrade the separate `Full semantic replay coverage` row to GREEN. Events and strategic objects outside the Wave-3 trust and Wave-4 proof surfaces remain part of W7 replay exhaustion.
 
 ## Claim boundary
 
