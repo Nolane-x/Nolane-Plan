@@ -1,6 +1,7 @@
 """Nolane Plan — proof-carrying strategic future-space runtime."""
 
 from .kernel import PlanKernel
+from .lineage_recovery import install_lineage_recovery
 from .lineage_runtime import install_lineage_runtime
 from .migration_runtime import install_migration_runtime
 from .mission import MissionContract, MissionLedger
@@ -8,6 +9,7 @@ from .policy_recovery import install_policy_recovery
 from .policy_runtime import install_policy_runtime
 from .proof_recovery import install_proof_recovery
 from .proof_runtime import install_proof_runtime
+from .replay_payload_runtime import install_replay_payload_runtime
 from .resume import install_runtime_extensions
 from .schedulability_recovery import install_schedulability_recovery
 from .schedulability_runtime import install_schedulability_runtime
@@ -28,6 +30,8 @@ install_schedulability_runtime(PlanKernel)
 install_schedulability_recovery(PlanKernel)
 install_lineage_runtime(PlanKernel)
 install_migration_runtime(PlanKernel)
+install_replay_payload_runtime(PlanKernel)
+install_lineage_recovery(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
 __version__ = "0.6.0a1"
