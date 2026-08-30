@@ -530,19 +530,14 @@ def _replay_migration(kernel, entry) -> None:
     if current.revision_id != manifest.source_schema_revision:
         raise ReplayError("migration replay source schema is not current")
     sequence = entry.sequence
-    token = digest({
-        "kind": SemanticRegimeKind.SCHEMA.value,
-        "semantic": manifest.target_schema_semantic_digest,
-        "sequence": sequence,
-    })[:16]
     target = SemanticRegimeRevision.create(
         regime_kind=SemanticRegimeKind.SCHEMA,
         logical_id=current.logical_id,
-        revision_id=f"{current.logical_id}:r{sequence}:{token}",
+        revision_id=manifest.target_schema_revision,
         created_sequence=sequence,
         parent_revision_id=current.revision_id,
         semantic_digest=manifest.target_schema_semantic_digest,
-        provenance_refs=manifest.provenance_refs,
+        provenance_refs=tuple(manifest.provenance_refs) + (manifest.manifest_id,),
     )
     kernel.lineage.register_regime(target)
     kernel.semantic_regimes[SemanticRegimeKind.SCHEMA] = target.revision_id
