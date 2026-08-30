@@ -14,7 +14,8 @@ dependencies = []
 keywords = ["ai-agents", "planning", "multi-agent", "verification", "runtime", "future-space"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OS Independent",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
 ]
 
 [project.scripts]
