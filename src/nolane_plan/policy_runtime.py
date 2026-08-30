@@ -3,6 +3,16 @@ from __future__ import annotations
 from typing import Any, Iterable
 
 from .hashing import digest
+from .policy_codec import (
+    epoch_doc,
+    executability_doc,
+    frontier_doc,
+    node_doc,
+    partition_doc,
+    seal_doc,
+    selection_doc,
+    sufficiency_doc,
+)
 from .policy_executability import ExecutabilityStatus, PolicyExecutabilityAssessment
 from .policy_information import DecisionEpoch, InformationPartitionRevision, ObservationFrontierRevision
 from .policy_ir import PolicyNodeRevision
@@ -64,15 +74,7 @@ def _register_policy_frontier(self, frontier: ObservationFrontierRevision) -> Ob
         if frontier.information_access_profile_revision != self.current_policy_access_revision(frontier.principal_scope_ref):
             raise ValueError("policy frontier binds a stale principal access revision")
         self.policy_frontiers[frontier.revision_id] = frontier
-        self._record(
-            "policy.frontier_registered",
-            {
-                "revision_id": frontier.revision_id,
-                "principal_ref": frontier.principal_scope_ref,
-                "access_revision": frontier.information_access_profile_revision,
-                "canonical_digest": frontier.canonical_digest,
-            },
-        )
+        self._record("policy.frontier_registered", frontier_doc(frontier))
         return frontier
 
 
@@ -89,15 +91,7 @@ def _register_information_partition(self, partition: InformationPartitionRevisio
         if partition.information_access_profile_revision != self.current_policy_access_revision(partition.principal_scope_ref):
             raise ValueError("information partition binds a stale principal access revision")
         self.policy_partitions[partition.revision_id] = partition
-        self._record(
-            "policy.partition_registered",
-            {
-                "revision_id": partition.revision_id,
-                "epoch_ref": partition.decision_epoch_ref,
-                "principal_ref": partition.principal_scope_ref,
-                "canonical_digest": partition.canonical_digest,
-            },
-        )
+        self._record("policy.partition_registered", partition_doc(partition))
         return partition
 
 
@@ -129,16 +123,7 @@ def _register_decision_epoch(self, epoch: DecisionEpoch) -> DecisionEpoch:
         if partition.decision_epoch_ref != epoch.epoch_id:
             raise ValueError("information partition is bound to another decision epoch")
         self.policy_epochs[epoch.epoch_id] = epoch
-        self._record(
-            "policy.epoch_registered",
-            {
-                "epoch_id": epoch.epoch_id,
-                "principal_ref": epoch.decision_principal_ref,
-                "partition_revision": epoch.information_partition_revision,
-                "action_space_revision": epoch.available_action_space_revision,
-                "canonical_digest": epoch.canonical_digest,
-            },
-        )
+        self._record("policy.epoch_registered", epoch_doc(epoch))
         return epoch
 
 
@@ -151,8 +136,8 @@ def _register_policy_node(self, node: PolicyNodeRevision) -> PolicyNodeRevision:
         frontier = self.policy_frontiers.get(node.observation_frontier_revision)
         if epoch is None or partition is None or frontier is None:
             raise ValueError("policy node requires registered epoch, partition and observation frontier")
-        # Registration records the artifact; authority validation decides whether its
-        # principal/snapshot bindings are usable.  This keeps invalid artifacts auditable.
+        # Registration preserves auditable artifacts even if their principal binding is
+        # unusable.  Authority validation is the fail-closed boundary for that mismatch.
         if node.mission_revision != epoch.mission_revision or node.plan_snapshot_version != epoch.plan_snapshot_version:
             raise ValueError("policy node semantic snapshot differs from decision epoch")
         if node.strategic_location_revision != epoch.strategic_location_revision:
@@ -165,17 +150,7 @@ def _register_policy_node(self, node: PolicyNodeRevision) -> PolicyNodeRevision:
         if missing_actions:
             raise ValueError(f"policy node references unknown action contracts: {sorted(missing_actions)!r}")
         self.policy_nodes[node.revision_id] = node
-        self._record(
-            "policy.node_registered",
-            {
-                "revision_id": node.revision_id,
-                "principal_ref": node.decision_principal_ref,
-                "epoch_ref": node.decision_epoch_ref,
-                "partition_revision": node.information_partition_revision,
-                "sealed": node.sealed,
-                "canonical_digest": node.canonical_digest,
-            },
-        )
+        self._record("policy.node_registered", node_doc(node))
         return node
 
 
@@ -188,19 +163,7 @@ def _register_selection_record(self, record: SelectionRecord) -> SelectionRecord
         if record.chosen_action_ref not in self.actions:
             raise ValueError("selection record references an unknown action")
         self.policy_selections[record.record_id] = record
-        self._record(
-            "policy.selection_registered",
-            {
-                "record_id": record.record_id,
-                "transaction_id": record.transaction_id,
-                "principal_ref": record.decision_principal_ref,
-                "partition_revision": record.information_partition_revision,
-                "action_space_revision": record.action_space_revision,
-                "chosen_action_ref": record.chosen_action_ref,
-                "status": record.status.value,
-                "canonical_digest": record.canonical_digest,
-            },
-        )
+        self._record("policy.selection_registered", selection_doc(record))
         return record
 
 
@@ -215,17 +178,7 @@ def _register_decision_sufficiency(self, certificate: DecisionSufficiencyCertifi
         if certificate.action_ref not in self.actions:
             raise ValueError("decision sufficiency references an unknown action")
         self.policy_sufficiency[certificate.revision_id] = certificate
-        self._record(
-            "policy.sufficiency_registered",
-            {
-                "revision_id": certificate.revision_id,
-                "action_ref": certificate.action_ref,
-                "epoch_ref": certificate.decision_epoch_ref,
-                "principal_ref": certificate.decision_principal_ref,
-                "complete": certificate.complete,
-                "canonical_digest": certificate.canonical_digest,
-            },
-        )
+        self._record("policy.sufficiency_registered", sufficiency_doc(certificate))
         return certificate
 
 
@@ -239,17 +192,7 @@ def _register_plan_seal(self, seal: PlanSeal) -> PlanSeal:
         if seal.sufficiency_certificate_digest != sufficiency.canonical_digest:
             raise ValueError("PlanSeal sufficiency digest mismatch")
         self.policy_seals[seal.revision_id] = seal
-        self._record(
-            "policy.seal_registered",
-            {
-                "revision_id": seal.revision_id,
-                "mission_revision": seal.mission_revision,
-                "canonical_state_version": seal.canonical_state_version,
-                "sufficiency_revision": seal.sufficiency_certificate_revision,
-                "status": seal.status.value,
-                "canonical_digest": seal.canonical_digest,
-            },
-        )
+        self._record("policy.seal_registered", seal_doc(seal))
         return seal
 
 
@@ -260,16 +203,7 @@ def _register_policy_executability(self, assessment: PolicyExecutabilityAssessme
         if assessment.closure_manifest.policy_revision not in self.policy_nodes:
             raise ValueError("policy executability references an unknown policy node")
         self.policy_executability[assessment.revision_id] = assessment
-        self._record(
-            "policy.executability_registered",
-            {
-                "revision_id": assessment.revision_id,
-                "scope_ref": assessment.scope_ref,
-                "policy_revision": assessment.closure_manifest.policy_revision,
-                "status": assessment.status.value,
-                "canonical_digest": assessment.canonical_digest,
-            },
-        )
+        self._record("policy.executability_registered", executability_doc(assessment))
         return assessment
 
 
