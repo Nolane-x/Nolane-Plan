@@ -39,6 +39,18 @@ def _grant_doc(grant) -> dict[str, Any]:
     }
 
 
+def _cut_doc(cut) -> dict[str, Any]:
+    return {
+        "id": cut.id,
+        "revision": cut.revision,
+        "commit_frontier_sequence": cut.commit_frontier_sequence,
+        "mission_revision": cut.mission_revision,
+        "canonical_state_revision": cut.canonical_state_revision,
+        "strategic_location_revision": cut.strategic_location_revision,
+        "source_generations": [list(pair) for pair in cut.source_generations],
+    }
+
+
 def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
     doc = dict(payload)
     if event_type in {"mission.created", "mission.revised"}:
@@ -67,7 +79,7 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
             "id": record.id,
             "claim": record.claim,
             "polarity": record.polarity.value,
-            "source": record.source,
+            "source_id": record.source_id,
             "lineage_root": record.lineage_root,
             "observed_at": record.observed_at,
             "valid_until": record.valid_until,
@@ -75,7 +87,6 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
             "revoked": record.revoked,
             "revocation_reason": record.revocation_reason,
         }
-        doc["evidence_generation"] = self.evidence.generation
     elif event_type == "future.family_added":
         family = self.future.families[str(doc["family_id"])]
         doc["family"] = {
@@ -107,9 +118,9 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         doc["adapter"] = {
             "adapter_id": profile.adapter_id,
             "revision": profile.revision,
-            "host_verified": profile.host_verified,
-            "supports_postconditions": profile.supports_postconditions,
-            "assurance": profile.assurance,
+            "principal_attestation": profile.principal_attestation,
+            "dispatch_fence": profile.dispatch_fence,
+            "postcondition_assurance": profile.postcondition_assurance,
             "capability_digest": profile.capability_digest,
         }
     elif event_type == "region.registered":
@@ -119,10 +130,7 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
             "required_facts": region.required_facts,
             "decision_signature": region.decision_signature,
         }
-        doc["location_revision"] = self._location_revision
     elif event_type == "resource.reserved":
-        # The original payload is already semantically complete; bind the current
-        # ledger cardinality so replay can detect omission/reordering.
         doc["reservation_count"] = len(self.reservations.commitments)
     elif event_type == "capsule.compiled":
         capsule = self.capsules[str(doc["capsule_id"])]
@@ -143,15 +151,7 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
             "decision_cut_id": capsule.decision_cut_id,
         }
         cut = self.decision_cuts.get(capsule.decision_cut_id)
-        doc["decision_cut"] = {
-            "id": cut.id,
-            "revision": cut.revision,
-            "commit_frontier_sequence": cut.commit_frontier_sequence,
-            "mission_revision": cut.mission_revision,
-            "canonical_state_revision": cut.canonical_state_revision,
-            "strategic_location_revision": cut.strategic_location_revision,
-            "source_generations": [list(pair) for pair in cut.source_generations],
-        }
+        doc["decision_cut"] = _cut_doc(cut)
         artifact = self.artifacts.get(capsule.id)
         doc["artifact"] = {
             "id": artifact.id,
@@ -166,6 +166,7 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         doc["authorization"] = {
             "id": authorization.id,
             "action_id": authorization.action_id,
+            "action_family": authorization.action_family,
             "acting_principal_ref": authorization.acting_principal_ref,
             "grant_refs": list(authorization.grant_refs),
             "mission_version": authorization.mission_version,
@@ -177,6 +178,8 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
             "adapter_id": authorization.adapter_id,
             "adapter_revision": authorization.adapter_revision,
         }
+        if authorization.decision_cut_id:
+            doc["decision_cut"] = _cut_doc(self.decision_cuts.get(authorization.decision_cut_id))
         doc["transaction"] = {
             "id": tx.id,
             "action_id": tx.action_id,
@@ -188,6 +191,18 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
             "adapter_revision": tx.adapter_revision,
             "detail": tx.detail,
         }
+    elif event_type == "action.outcome_observed":
+        receipt = self.receipts[str(doc["receipt_id"])]
+        doc["receipt"] = {
+            "id": receipt.id,
+            "action_id": receipt.action_id,
+            "authorization_id": receipt.authorization_id,
+            "executing_principal_ref": receipt.executing_principal_ref,
+            "transport_ok": receipt.transport_ok,
+            "postconditions_verified": receipt.postconditions_verified,
+            "state_patch": receipt.state_patch,
+            "observed_at": receipt.observed_at,
+        }
     elif event_type == "state.relocated":
         location = self.strategic_location
         doc["location"] = {
@@ -195,7 +210,6 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
             "region_ids": list(location.region_ids),
             "decision_signatures": list(location.decision_signatures),
         }
-        doc["location_revision"] = self._location_revision
     elif event_type == "recovery.model_class_uncertain":
         state = self.recovery.state
         doc["recovery"] = {
@@ -204,7 +218,6 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
             "residual_weight": state.residual_weight,
             "generation": state.generation,
         }
-        doc["plan_snapshot_version"] = self.plan_snapshot_version
     elif event_type == "completion.verified":
         report = self.completion_reports[str(doc["artifact_id"])]
         doc["report"] = {
@@ -218,6 +231,18 @@ def _enrich(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
     elif event_type == "model.proposal_received":
         proposal_id = str(doc["proposal_id"])
         doc["proposal"] = self.model_proposals[proposal_id]
+
+    # A single event must carry enough cross-cut metadata to restore exact current
+    # generations even when the originating mutation used the internal `_bump`
+    # helper and therefore emitted no separate freshness event.
+    doc["_replay"] = {
+        "plan_snapshot_version": self.plan_snapshot_version,
+        "freshness_generations": dict(self.freshness.generations),
+        "location_revision": self._location_revision,
+        "evidence_generation": self.evidence.generation,
+        "principal_partition_revision": self.principals._partition_revision,
+        "decision_cut_revision": self.decision_cuts._revision,
+    }
     return doc
 
 
