@@ -288,6 +288,11 @@ class HandoffLivenessEvaluator:
             progress_policy,
             debt_lineage_equivalent=bool(debt_lineage_equivalent),
         )
+        rank_regression_blockers: list[str] = []
+        if new_rank.unresolved_critical_debt_count > old_rank.unresolved_critical_debt_count:
+            rank_regression_blockers.append("critical_debt_regressed")
+        if new_rank.remaining_synthesis_workload > old_rank.remaining_synthesis_workload:
+            rank_regression_blockers.append("remaining_synthesis_workload_regressed")
 
         if recursive_feasibility is not True:
             status = HandoffProgressStatus.UNKNOWN
@@ -310,6 +315,9 @@ class HandoffLivenessEvaluator:
         elif new_rank.minimum_preparedness_at_next_boundary < progress_policy.preparedness_floor_at(now):
             status = HandoffProgressStatus.NO_PROGRESS
             blockers.append("mandatory_preparedness_floor_missed")
+        elif rank_regression_blockers:
+            status = HandoffProgressStatus.NO_PROGRESS
+            blockers.extend(rank_regression_blockers)
         elif progress:
             status = HandoffProgressStatus.STRICT_PROGRESS
         elif recovery_mode:
