@@ -189,7 +189,7 @@ class Wave6ReplayTests(unittest.TestCase):
 
     def test_v6_round_trip_preserves_all_wave6_registries_and_digests(self):
         values = self._register_full_state()
-        state = self.kernel.save_snapshot()
+        state = self.kernel.save_snapshot_v6()
         self.assertEqual(state["snapshot_schema"], SCHEDULABILITY_SNAPSHOT_SCHEMA)
         reopened = PlanKernel.open(self.root)
         self.assertEqual(reopened.control_plane_resources["verifier"].canonical_digest, values[0].canonical_digest)
