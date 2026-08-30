@@ -16,4 +16,4 @@ install_proof_runtime(PlanKernel)
 install_proof_recovery(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
-__version__ = "0.3.0a1"
+__version__ = "0.4.0a1"
