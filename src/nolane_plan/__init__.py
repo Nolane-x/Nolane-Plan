@@ -34,8 +34,8 @@ install_lineage_runtime(PlanKernel)
 install_migration_runtime(PlanKernel)
 install_replay_payload_runtime(PlanKernel)
 install_lineage_recovery(PlanKernel)
-install_compaction_runtime(PlanKernel)
 install_lineage_snapshot(PlanKernel)
+install_compaction_runtime(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
 __version__ = "0.6.0a1"
