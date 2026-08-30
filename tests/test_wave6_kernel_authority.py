@@ -192,8 +192,9 @@ class Wave6KernelAuthorityTests(unittest.TestCase):
             temporal_authority_ref="temporal@1",
         )
         return HandoffLivenessEvaluator.evaluate(
-            certificate_id="liveness", revision_id="liveness@1", source_continuation_ref="source",
-            successor_continuation_ref="successor", old_rank=old, new_rank=new, progress_policy=policy,
+            certificate_id="liveness", revision_id="liveness@exhausted" if exhausted else "liveness@1",
+            source_continuation_ref="source", successor_continuation_ref="successor",
+            old_rank=old, new_rank=new, progress_policy=policy,
             handoff_count=1, ordinary_stutter_count=1 if exhausted else 0, recovery_stutter_count=0,
             total_deferral_time=1, recursive_feasibility=True, information_available_by_deadline=True,
             recovery_mode=False, temporal_authority_revision_ref="temporal@1", current_time=20,
