@@ -151,6 +151,8 @@ def _apply_semantic_migration(
             root_switched_sequence=self.writer_sequence,
         )
         self.migration_history.append(result)
+        if bridge is not None:
+            self.migration_bridges[bridge.evidence_ref] = bridge
         return result
 
 
@@ -167,6 +169,10 @@ def install_migration_runtime(kernel_cls) -> None:
         self.migration_manifests: dict[str, MigrationManifest] = {}
         self.migration_history: list[MigrationResult] = []
         self.migration_recheck_required_authorizations: set[str] = set()
+        # Replay code and semantic-digest code share this exact mutable set;
+        # the alias is compatibility-only and cannot diverge.
+        self.migration_recheck_authorizations = self.migration_recheck_required_authorizations
+        self.migration_bridges: dict[str, MigrationBridgeEvidence] = {}
 
     def dispatch(self, authorization_id, *args, **kwargs):
         with self._writer_lock:
