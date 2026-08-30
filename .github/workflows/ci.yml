@@ -21,7 +21,17 @@ jobs:
       - name: Install
         run: python -m pip install -e .
       - name: Unit and conformance tests
-        run: python -m unittest discover -s tests -v
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee unit-test-${{ matrix.python-version }}.log
+      - name: Retain failing unit test transcript
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-failure-${{ matrix.python-version }}
+          path: unit-test-${{ matrix.python-version }}.log
+          if-no-files-found: error
+          retention-days: 7
       - name: Compile all modules
         run: python -m compileall -q src
       - name: Principal-scope conformance oracle
