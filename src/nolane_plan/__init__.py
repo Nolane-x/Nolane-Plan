@@ -1,5 +1,6 @@
 """Nolane Plan — proof-carrying strategic future-space runtime."""
 
+from .compaction_runtime import install_compaction_runtime
 from .kernel import PlanKernel
 from .lineage_recovery import install_lineage_recovery
 from .lineage_runtime import install_lineage_runtime
@@ -33,6 +34,7 @@ install_lineage_runtime(PlanKernel)
 install_migration_runtime(PlanKernel)
 install_replay_payload_runtime(PlanKernel)
 install_lineage_recovery(PlanKernel)
+install_compaction_runtime(PlanKernel)
 install_lineage_snapshot(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
