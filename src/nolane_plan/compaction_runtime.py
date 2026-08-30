@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+from pathlib import Path
 from typing import Iterable
 
 from .compaction import (
@@ -8,7 +10,9 @@ from .compaction import (
     CompactionManifest,
     CompactionResult,
 )
+from .hashing import digest
 from .lineage import SemanticRegimeKind
+from .persistence import HashJournal, SnapshotStore
 from .types import ReplayError
 
 
@@ -133,10 +137,6 @@ def _compact_lineage(self, manifest_id: str, *, dormant_branches: Iterable[objec
         if reconstructed.semantic_root_digest() != source_root:
             raise CompactionError("archive reconstruction does not reproduce source semantic root")
 
-        # Reference-runtime compaction is intentionally representation-only: the
-        # canonical lineage registry, current pointers, regimes and authority
-        # bindings remain untouched. The single journal record is the atomic
-        # visibility point for archive+manifest+result.
         target_root = self.lineage.semantic_root_digest()
         target_canonical = canonical_semantic_digest(self)
         result = CompactionResult.create(
@@ -183,7 +183,7 @@ def compaction_snapshot_state(kernel) -> dict[str, object]:
             key: value.canonical_payload()
             for key, value in sorted(kernel.compaction_manifests.items())
         },
-        "archives": {
+        "archive": {
             key: value.canonical_payload()
             for key, value in sorted(kernel.compaction_archives.items())
         },
@@ -212,8 +212,10 @@ def _validate_restored_compaction(kernel, manifest: CompactionManifest, archive:
 
 def restore_compaction_snapshot(kernel, raw: dict[str, object]) -> None:
     manifests_raw = raw.get("manifests", {})
-    archives_raw = raw.get("archives", {})
+    archives_raw = raw.get("archive", {})
     results_raw = raw.get("results", {})
+    if manifests_raw in ([], ()) and archives_raw in ([], ()) and not results_raw:
+        manifests_raw, archives_raw, results_raw = {}, {}, {}
     if not isinstance(manifests_raw, dict) or not isinstance(archives_raw, dict) or not isinstance(results_raw, dict):
         raise ReplayError("invalid compaction snapshot envelope")
     if set(manifests_raw) != set(archives_raw) or set(manifests_raw) != set(results_raw):
@@ -279,10 +281,18 @@ def replay_compaction_commit(kernel, entry) -> None:
 
 
 def install_compaction_runtime(kernel_cls) -> None:
-    """Install reversible representation-only compaction on the Wave-7 writer spine."""
+    """Install reversible representation-only compaction above the v7 snapshot layer."""
     if getattr(kernel_cls, "_wave7_compaction_runtime_installed", False):
         return
+
+    from . import lineage_recovery as lineage_recovery_module
+    from . import lineage_snapshot as lineage_snapshot_module
+
     original_init = kernel_cls.__init__
+    base_snapshot_state = kernel_cls.snapshot_state
+    base_save_snapshot = kernel_cls.save_snapshot
+    base_open = kernel_cls.open
+    base_replay_entry = lineage_recovery_module._replay_entry
 
     def __init__(self, *args, **kwargs):
         original_init(self, *args, **kwargs)
@@ -290,7 +300,68 @@ def install_compaction_runtime(kernel_cls) -> None:
         self.compaction_archives: dict[str, CompactionArchive] = {}
         self.compaction_results: dict[str, CompactionResult] = {}
 
+    def replay_entry(kernel, entry):
+        if entry.event_type == "compaction.representation_committed":
+            lineage_recovery_module._flush_pending_canonical(kernel)
+            replay_compaction_commit(kernel, entry)
+            lineage_recovery_module._restore_meta(kernel, dict(entry.payload))
+            return
+        return base_replay_entry(kernel, entry)
+
+    def snapshot_state(self):
+        state = dict(base_snapshot_state(self))
+        lineage_state = dict(state.get("lineage") or {})
+        lineage_state["compaction"] = compaction_snapshot_state(self)
+        state["lineage"] = lineage_state
+        return state
+
+    def save_snapshot(self):
+        with self._writer_lock:
+            state = snapshot_state(self)
+            self.snapshots.save(state)
+            self._record(
+                "snapshot.saved",
+                {
+                    "snapshot_schema": lineage_snapshot_module.LINEAGE_SNAPSHOT_SCHEMA,
+                    "snapshot_digest": digest(state),
+                    "bound_journal_head": state["journal_head"],
+                },
+            )
+            return state
+
+    @classmethod
+    def open_snapshot(cls, root: Path):
+        root = Path(root)
+        state = SnapshotStore(root / "snapshot.json").load()
+        if str(state.get("snapshot_schema", "")) != lineage_snapshot_module.LINEAGE_SNAPSHOT_SCHEMA:
+            return base_open(root)
+
+        journal = HashJournal(root / "journal.jsonl")
+        journal.verify(raise_on_error=True)
+        entries = journal.entries()
+        prefix_length = lineage_snapshot_module._find_snapshot_prefix(
+            entries, str(state.get("journal_head", ""))
+        )
+        kernel = lineage_snapshot_module._restore_base_v6_layers(cls, root, state)
+        wave7 = state.get("lineage")
+        if not isinstance(wave7, dict):
+            raise ReplayError("v7 snapshot is missing durable lineage state")
+        compaction_raw = copy.deepcopy(wave7.get("compaction") or {})
+        sanitized = copy.deepcopy(wave7)
+        sanitized["compaction"] = {"manifests": [], "archive": []}
+        lineage_snapshot_module._restore_wave7_state(kernel, sanitized)
+        restore_compaction_snapshot(kernel, compaction_raw)
+        for entry in entries[prefix_length:]:
+            replay_entry(kernel, entry)
+        lineage_recovery_module._flush_pending_canonical(kernel)
+        return kernel
+
+    lineage_recovery_module._replay_entry = replay_entry
+    lineage_snapshot_module._replay_entry = replay_entry
     kernel_cls.__init__ = __init__
+    kernel_cls.snapshot_state = snapshot_state
+    kernel_cls.save_snapshot = save_snapshot
+    kernel_cls.open = open_snapshot
     kernel_cls.compact_lineage = _compact_lineage
     kernel_cls.reconstruct_compacted_lineage = _reconstruct_compacted_lineage
     kernel_cls._wave7_compaction_runtime_installed = True
