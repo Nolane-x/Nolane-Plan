@@ -2,6 +2,7 @@
 
 from .kernel import PlanKernel
 from .mission import MissionContract, MissionLedger
+from .policy_recovery import install_policy_recovery
 from .policy_runtime import install_policy_runtime
 from .proof_recovery import install_proof_recovery
 from .proof_runtime import install_proof_runtime
@@ -16,6 +17,7 @@ install_trust_recovery(PlanKernel)
 install_proof_runtime(PlanKernel)
 install_proof_recovery(PlanKernel)
 install_policy_runtime(PlanKernel)
+install_policy_recovery(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
 __version__ = "0.4.0a1"
