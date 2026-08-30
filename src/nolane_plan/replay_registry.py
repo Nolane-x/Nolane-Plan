@@ -194,7 +194,6 @@ _SCHEDULABILITY_EVENTS = (
 
 _WAVE7_SPECS = (
     _base("semantic.regime_revised", "semantic_regime_revised"),
-    _base("action.authorization_lineage_bound", "authorization_lineage_bound"),
     _base("migration.schema_root_switched", "migration_schema_root_switched"),
 )
 
