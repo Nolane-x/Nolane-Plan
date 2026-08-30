@@ -6,9 +6,12 @@ from pathlib import Path
 
 from nolane_plan import PlanKernel
 from nolane_plan.actions import ActionIntent, AuthorityGrant
+from nolane_plan.evidence import EvidencePolarity, EvidenceRecord
+from nolane_plan.execution import AdapterProfile
 from nolane_plan.future import FutureFamily
 from nolane_plan.lineage import SemanticRegimeKind
 from nolane_plan.obligations import StrategicObligation
+from nolane_plan.relocation import CandidateRegion
 from nolane_plan.types import AuthorizationError
 
 
@@ -64,6 +67,29 @@ class Wave7KernelLineageTests(unittest.TestCase):
         self.assertEqual(kernel.lineage.current("StrategicObligation", "rollback").logical_id, "rollback")
         self.assertEqual(kernel.lineage.current("ActionIntent", "deploy").logical_id, "deploy")
         self.assertEqual(kernel.lineage.current("AuthorityGrant", "deploy-grant").logical_id, "deploy-grant")
+
+    def test_evidence_adapter_and_region_mutations_get_canonical_lineage(self):
+        kernel = self.make_kernel()
+        evidence = EvidenceRecord(
+            "e:verified",
+            "artifact verified",
+            EvidencePolarity.SUPPORTS,
+            "ci",
+            "ci:root",
+            1,
+            valid_until=20,
+            assurance=0.97,
+        )
+        adapter = AdapterProfile("adapter:deploy", 1, True, True, 0.95)
+        region = CandidateRegion("region:ready", {"done": False}, "deploy")
+
+        kernel.add_evidence(evidence)
+        kernel.register_adapter(adapter)
+        kernel.register_region(region)
+
+        self.assertEqual(kernel.lineage.current("EvidenceRecord", evidence.id).logical_id, evidence.id)
+        self.assertEqual(kernel.lineage.current("AdapterProfile", adapter.adapter_id).logical_id, adapter.adapter_id)
+        self.assertEqual(kernel.lineage.current("CandidateRegion", region.id).logical_id, region.id)
 
     def test_mission_revision_supersedes_lineage_without_erasing_history(self):
         kernel = self.make_kernel()
