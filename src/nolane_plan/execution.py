@@ -217,7 +217,9 @@ class ReconciliationEvidence:
 
 class TransactionState(str, Enum):
     AUTHORIZED = "authorized"
+    CANCELLED_PRE_DISPATCH = "cancelled_pre_dispatch"
     DISPATCH_RECORDED = "dispatch_recorded"
+    CANCELLATION_PENDING = "cancellation_pending"
     OUTCOME_OBSERVED = "outcome_observed"
     RECONCILIATION_REQUIRED = "reconciliation_required"
     RECONCILED_APPLIED = "reconciled_applied"
@@ -273,6 +275,33 @@ class ActionTransactionLedger:
         self._items[transaction_id] = item
         return item
 
+    @staticmethod
+    def _cancellation_detail(detail: str) -> str:
+        value = str(detail).strip()
+        if not value:
+            raise AuthorizationError("cancellation detail must be non-empty")
+        return value
+
+    def cancel_before_dispatch(self, transaction_id: str, detail: str) -> ActionTransaction:
+        item = self.get(transaction_id)
+        if item.state != TransactionState.AUTHORIZED:
+            raise AuthorizationError(f"transaction cannot cancel before dispatch from {item.state.value}")
+        return self._set(
+            transaction_id,
+            state=TransactionState.CANCELLED_PRE_DISPATCH,
+            detail=self._cancellation_detail(detail),
+        )
+
+    def request_cancellation_after_dispatch(self, transaction_id: str, detail: str) -> ActionTransaction:
+        item = self.get(transaction_id)
+        if item.state != TransactionState.DISPATCH_RECORDED:
+            raise AuthorizationError(f"transaction cannot request cancellation from {item.state.value}")
+        return self._set(
+            transaction_id,
+            state=TransactionState.CANCELLATION_PENDING,
+            detail=self._cancellation_detail(detail),
+        )
+
     def record_dispatch(self, transaction_id: str, adapter_id: str, adapter_revision: int) -> ActionTransaction:
         item = self.get(transaction_id)
         if item.state not in {TransactionState.AUTHORIZED, TransactionState.RECONCILED_NOT_APPLIED}:
@@ -298,6 +327,10 @@ class ActionTransactionLedger:
 
     def assert_retry_allowed(self, transaction_id: str) -> bool:
         item = self.get(transaction_id)
+        if item.state == TransactionState.CANCELLED_PRE_DISPATCH:
+            raise AuthorizationError("action was cancelled before dispatch")
+        if item.state == TransactionState.CANCELLATION_PENDING:
+            raise AuthorizationError("cancellation is pending; reconciliation is required before retry")
         if item.state == TransactionState.RECONCILIATION_REQUIRED and not item.idempotent:
             raise AuthorizationError("non-idempotent action requires trusted reconciliation before retry")
         if item.state in {TransactionState.COMMITTED, TransactionState.RECONCILED_APPLIED}:
@@ -327,7 +360,7 @@ class ActionTransactionLedger:
         minimum_assurance: float = 0.8,
     ) -> ActionTransaction:
         item = self.get(transaction_id)
-        if item.state != TransactionState.RECONCILIATION_REQUIRED:
+        if item.state not in {TransactionState.RECONCILIATION_REQUIRED, TransactionState.CANCELLATION_PENDING}:
             raise AuthorizationError("transaction is not awaiting reconciliation")
         if evidence.transaction_id != item.id:
             raise AuthorizationError("reconciliation evidence transaction mismatch")
