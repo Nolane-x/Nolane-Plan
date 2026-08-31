@@ -10,7 +10,6 @@ from .actions import ActionIntent, AuthorityGrant
 from .evidence import EvidencePolarity, EvidenceRecord
 from .future_resurrection import DormantBranchRevision
 from .handoff_stability import HandoffStabilityContract
-from .hashing import digest
 from .lineage import (
     CanonicalLineageRevision,
     LineageError,
@@ -20,7 +19,6 @@ from .lineage import (
 from .lineage_recovery import canonical_semantic_digest
 from .migration import (
     FieldMigrationDisposition,
-    IdentityMapping,
     MigrationDisposition,
     MigrationError,
     MigrationManifest,
@@ -51,6 +49,21 @@ def _root() -> Path:
 
 def _kernel() -> PlanKernel:
     return PlanKernel.create(_root(), "wave7 conformance", ("done",), ("preserve rollback",))
+
+
+def _advance_writer(kernel: PlanKernel, marker: str) -> None:
+    """Advance causal sequence through a replayable production mutation."""
+    kernel.add_evidence(
+        EvidenceRecord(
+            f"conformance:advance:{marker}",
+            f"advance writer for {marker}",
+            EvidencePolarity.SUPPORTS,
+            "host",
+            f"root:conformance:{marker}",
+            kernel.writer_sequence + 1,
+            assurance=0.9,
+        )
+    )
 
 
 def _lineage_row(
@@ -236,21 +249,16 @@ def _fallback_contract() -> HandoffStabilityContract:
     )
 
 
-# Lineage --------------------------------------------------------------------------------
-
 def _lg01() -> bool:
     registry = LineageRegistry()
-    first = _lineage_row()
-    registry.register(first)
-    alias = _lineage_row(family="Other", logical_id="other")
-    return _raises(LineageError, lambda: registry.register(alias))
+    registry.register(_lineage_row())
+    return _raises(LineageError, lambda: registry.register(_lineage_row(family="Other", logical_id="other")))
 
 
 def _lg02() -> bool:
     registry = LineageRegistry()
     registry.register(_lineage_row())
-    rebound = _lineage_row(semantic="different")
-    return _raises(LineageError, lambda: registry.register(rebound))
+    return _raises(LineageError, lambda: registry.register(_lineage_row(semantic="different")))
 
 
 def _lg03() -> bool:
@@ -260,17 +268,11 @@ def _lg03() -> bool:
         semantic_digest="environment@changed",
         provenance_refs=("conformance",),
     )
-    return _raises(
-        AuthorizationError,
-        lambda: kernel._assert_authorization_lineage_current(authorization.id),
-    )
+    return _raises(AuthorizationError, lambda: kernel._assert_authorization_lineage_current(authorization.id))
 
 
 def _lg04() -> bool:
-    return _raises(
-        LineageError,
-        lambda: _lineage_row(parents=("artifact@1",)),
-    )
+    return _raises(LineageError, lambda: _lineage_row(parents=("artifact@1",)))
 
 
 def _lg05() -> bool:
@@ -281,7 +283,7 @@ def _lg05() -> bool:
         semantic_payload={"v": 1},
         provenance_refs=("root:proof@1",),
     )
-    kernel.bump_domain("conformance-lineage")
+    _advance_writer(kernel, "conformance-lineage")
     second = kernel._register_lineage(
         object_family="DerivedArtifact",
         logical_id="proof",
@@ -291,10 +293,7 @@ def _lg05() -> bool:
     result = kernel.compact_lineage("compaction:lg05")
     rebuilt = kernel.reconstruct_compacted_lineage(result.manifest_id)
     restored = rebuilt.get(second.revision_id)
-    return (
-        first.revision_id in restored.parent_revision_ids
-        and restored.provenance_refs == second.provenance_refs
-    )
+    return first.revision_id in restored.parent_revision_ids and restored.provenance_refs == second.provenance_refs
 
 
 def _lg06() -> bool:
@@ -311,20 +310,13 @@ def _lg07() -> bool:
         semantic_digest="world@changed",
         provenance_refs=("conformance",),
     )
-    current = {
-        kind.value: kernel.lineage.current_regime(kind).revision_id
-        for kind in SemanticRegimeKind
-    }
-    return bound != current and _raises(
-        AuthorizationError,
-        lambda: kernel._assert_authorization_lineage_current(authorization.id),
-    )
+    current = {kind.value: kernel.lineage.current_regime(kind).revision_id for kind in SemanticRegimeKind}
+    return bound != current and _raises(AuthorizationError, lambda: kernel._assert_authorization_lineage_current(authorization.id))
 
 
 def _lg08() -> bool:
     kernel, epoch = _decision_epoch_kernel()
-    binding = kernel.decision_epoch_lineage_bindings[epoch.epoch_id]
-    before = binding["regime_lineage_digest"]
+    before = kernel.decision_epoch_lineage_bindings[epoch.epoch_id]["regime_lineage_digest"]
     kernel.revise_semantic_regime(
         SemanticRegimeKind.SEMANTIC_PROFILE,
         semantic_digest="semantic-profile@changed",
@@ -332,8 +324,6 @@ def _lg08() -> bool:
     )
     return before != kernel.current_semantic_regime_lineage_digest()
 
-
-# Migration ------------------------------------------------------------------------------
 
 def _mg01() -> bool:
     return _raises(
@@ -348,16 +338,11 @@ def _mg01() -> bool:
 
 
 def _mg02() -> bool:
-    return _raises(
-        MigrationError,
-        lambda: _manifest(target_schema_semantic_digest=""),
-    )
+    return _raises(MigrationError, lambda: _manifest(target_schema_semantic_digest=""))
 
 
 def _mg03() -> bool:
-    disposition = FieldMigrationDisposition(
-        "PolicyNodeRevision", "logical_id", MigrationDisposition.PRESERVED_EXACTLY
-    )
+    disposition = FieldMigrationDisposition("PolicyNodeRevision", "logical_id", MigrationDisposition.PRESERVED_EXACTLY)
     return _raises(
         MigrationError,
         lambda: _manifest(
@@ -375,10 +360,7 @@ def _mg04() -> bool:
         MigrationDisposition.ESCALATED_TO_DEBT,
         debt_ref="debt:guard",
     )
-    return _raises(
-        MigrationError,
-        lambda: _manifest(field_dispositions=(row,), new_debt_refs=()),
-    )
+    return _raises(MigrationError, lambda: _manifest(field_dispositions=(row,), new_debt_refs=()))
 
 
 def _mg05() -> bool:
@@ -387,10 +369,7 @@ def _mg05() -> bool:
     return (
         authorization.id in result.invalidated_authorization_ids
         and authorization.id in kernel.migration_recheck_required_authorizations
-        and _raises(
-            AuthorizationError,
-            lambda: kernel._assert_authorization_lineage_current(authorization.id),
-        )
+        and _raises(AuthorizationError, lambda: kernel._assert_authorization_lineage_current(authorization.id))
     )
 
 
@@ -406,7 +385,7 @@ def _mg06() -> bool:
 
 def _mg07() -> bool:
     kernel = _kernel()
-    kernel.bump_domain("pre-migration")
+    _advance_writer(kernel, "pre-migration")
     before = kernel.writer_sequence
     result = kernel.apply_semantic_migration(_manifest(), now=-1000)
     return result.root_switched_sequence == before + 1 == kernel.writer_sequence
@@ -436,8 +415,6 @@ def _mg10() -> bool:
     manifest = _manifest(unsupported_legacy_cases=("schema:v3-opaque",))
     return not manifest.supports_legacy_case("schema:v3-opaque")
 
-
-# Replay ---------------------------------------------------------------------------------
 
 def _rp01() -> bool:
     kernel = _kernel()
@@ -470,7 +447,7 @@ def _rp03() -> bool:
     kernel = _kernel()
     root = kernel.root
     kernel.save_snapshot()
-    kernel.bump_domain("post-snapshot")
+    _advance_writer(kernel, "post-snapshot")
     first = PlanKernel.open(root)
     second = PlanKernel.open(root)
     return canonical_semantic_digest(first) == canonical_semantic_digest(second)
@@ -512,7 +489,7 @@ def _rp06() -> bool:
         semantic_payload={"revision": 1},
         provenance_refs=("history@1",),
     )
-    kernel.bump_domain("history-advance")
+    _advance_writer(kernel, "history-advance")
     kernel._register_lineage(
         object_family="HistoricalArtifact",
         logical_id="artifact",
@@ -525,15 +502,10 @@ def _rp06() -> bool:
     return reopened.lineage.get(first.revision_id).revision_id == first.revision_id
 
 
-# Compaction -----------------------------------------------------------------------------
-
 def _gc01() -> bool:
     kernel = _kernel()
     mission = kernel.lineage.current("MissionRevision", "mission").revision_id
-    regimes = {
-        kind: kernel.lineage.current_regime(kind).revision_id
-        for kind in SemanticRegimeKind
-    }
+    regimes = {kind: kernel.lineage.current_regime(kind).revision_id for kind in SemanticRegimeKind}
     kernel.compact_lineage("compaction:gc01")
     return (
         kernel.lineage.current("MissionRevision", "mission").revision_id == mission
@@ -549,7 +521,7 @@ def _gc02() -> bool:
         semantic_payload={"revision": 1},
         provenance_refs=("parent@1",),
     )
-    kernel.bump_domain("compaction-parent")
+    _advance_writer(kernel, "compaction-parent")
     second = kernel._register_lineage(
         object_family="CompactionArtifact",
         logical_id="artifact",
@@ -558,8 +530,7 @@ def _gc02() -> bool:
     )
     result = kernel.compact_lineage("compaction:gc02")
     rebuilt = kernel.reconstruct_compacted_lineage(result.manifest_id)
-    restored = rebuilt.get(second.revision_id)
-    return first.revision_id in restored.parent_revision_ids
+    return first.revision_id in rebuilt.get(second.revision_id).parent_revision_ids
 
 
 def _gc03() -> bool:
@@ -600,9 +571,7 @@ def _gc05() -> bool:
     contract = _fallback_contract()
     kernel.register_handoff_stability_contract(contract)
     result = kernel.compact_lineage("compaction:gc05")
-    return contract.fallback_on_instability in kernel.compaction_manifests[
-        result.manifest_id
-    ].unique_fallback_refs
+    return contract.fallback_on_instability in kernel.compaction_manifests[result.manifest_id].unique_fallback_refs
 
 
 def _gc06() -> bool:
@@ -675,6 +644,20 @@ def run_wave7_conformance() -> dict[str, tuple[bool, str]]:
         try:
             passed = bool(case.check())
             results[name] = (passed, "defended" if passed else "invariant was not defended")
-        except Exception as exc:  # conformance runner must report rather than abort
+        except Exception as exc:
             results[name] = (False, f"{type(exc).__name__}: {exc}")
     return results
+
+
+def main() -> int:
+    results = run_wave7_conformance()
+    passed = 0
+    for name, (ok, detail) in results.items():
+        print(f"{'PASS' if ok else 'FAIL'} {name}: {detail}")
+        passed += int(ok)
+    print(f"WAVE7_CONFORMANCE={passed}/{len(results)}")
+    return 0 if passed == len(results) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
