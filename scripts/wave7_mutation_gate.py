@@ -18,13 +18,16 @@ TESTS = ROOT / "tests"
 class Mutation:
     name: str
     path: str
-    old: str
-    new: str
+    replacements: tuple[tuple[str, str], ...]
     test_pattern: str
 
 
+def _one(name: str, path: str, old: str, new: str, test_pattern: str) -> Mutation:
+    return Mutation(name, path, ((old, new),), test_pattern)
+
+
 MUTATIONS = (
-    Mutation(
+    _one(
         "revision_rebind_bypass",
         "lineage.py",
         'if existing != revision:\n                raise LineageError("revision_id cannot be rebound to different lineage content")',
@@ -34,67 +37,75 @@ MUTATIONS = (
     Mutation(
         "parent_cycle_bypass",
         "lineage.py",
-        'if revision in parents:\n            raise LineageError("revision cannot be its own parent")',
-        'if False and revision in parents:\n            raise LineageError("revision cannot be its own parent")',
+        (
+            (
+                'if revision in parents:\n            raise LineageError("revision cannot be its own parent")',
+                'if False and revision in parents:\n            raise LineageError("revision cannot be its own parent")',
+            ),
+            (
+                'for parent in revision.parent_revision_ids:\n            if parent == revision.revision_id:\n                raise LineageError("lineage parent cycle detected")',
+                'for parent in revision.parent_revision_ids:\n            if False and parent == revision.revision_id:\n                raise LineageError("lineage parent cycle detected")',
+            ),
+        ),
         "test_wave7_lineage.py",
     ),
-    Mutation(
+    _one(
         "semantic_regime_freshness_bypass",
         "lineage_runtime.py",
         'if dict(binding.regime_revisions) != current_regimes:\n        raise AuthorizationError("authorization semantic-regime lineage is stale")',
         'if False and dict(binding.regime_revisions) != current_regimes:\n        raise AuthorizationError("authorization semantic-regime lineage is stale")',
         "test_wave7_kernel_lineage.py",
     ),
-    Mutation(
+    _one(
         "logical_only_authority_binding",
         "lineage_runtime.py",
         "action_revision_id=action_lineage.revision_id,",
         "action_revision_id=authorization.action_id,",
-        "test_wave7_kernel_lineage.py",
+        "test_wave7_conformance.py",
     ),
-    Mutation(
+    _one(
         "migration_silent_default_bypass",
         "migration.py",
         "if set(disposition_by_key) != set(changed_fields):",
         "if False and set(disposition_by_key) != set(changed_fields):",
         "test_wave7_migration.py",
     ),
-    Mutation(
+    _one(
         "migration_debt_drop_bypass",
         "migration.py",
         "if row.debt_ref not in debts:\n                    raise MigrationError(f\"migration debt {row.debt_ref!r} is not declared in new_debt_refs\")",
         "if False and row.debt_ref not in debts:\n                    raise MigrationError(f\"migration debt {row.debt_ref!r} is not declared in new_debt_refs\")",
         "test_wave7_migration.py",
     ),
-    Mutation(
+    _one(
         "ambiguous_action_migration_bypass",
         "migration_runtime.py",
-        "if bridge is None:\n        raise MigrationError(\n            \"semantic migration is blocked while an external action is in-flight or ambiguous\"\n        )",
-        "if False and bridge is None:\n        raise MigrationError(\n            \"semantic migration is blocked while an external action is in-flight or ambiguous\"\n        )",
+        "if not ambiguous_transaction_ids:\n        return",
+        "if not ambiguous_transaction_ids or bridge is None:\n        return",
         "test_wave7_migration.py",
     ),
-    Mutation(
+    _one(
         "migration_authority_recheck_bypass",
         "migration_runtime.py",
         "self.migration_recheck_required_authorizations.update(invalidated)",
         "self.migration_recheck_required_authorizations.difference_update(invalidated)",
         "test_wave7_migration.py",
     ),
-    Mutation(
+    _one(
         "replay_unknown_event_bypass",
         "replay_registry.py",
         "if correctness_significant:\n                raise ReplayError(f\"unregistered correctness-significant replay event: {event_type}\")",
         "if False and correctness_significant:\n                raise ReplayError(f\"unregistered correctness-significant replay event: {event_type}\")",
         "test_wave7_replay_registry.py",
     ),
-    Mutation(
+    _one(
         "replay_semantic_freshness_drop",
         "lineage_recovery.py",
         'kernel.freshness.generations = {\n        str(key): int(value) for key, value in dict(meta["freshness_generations"]).items()\n    }',
         "kernel.freshness.generations = {}",
         "test_wave7_base_replay.py",
     ),
-    Mutation(
+    _one(
         "compaction_active_lineage_drop",
         "compaction_runtime.py",
         "active_authority_revision_ids=_authority_lineage_refs(self),",
@@ -103,9 +114,13 @@ MUTATIONS = (
     ),
     Mutation(
         "compaction_authority_equivalence_break",
-        "compaction_runtime.py",
-        "target_canonical = canonical_semantic_digest(self)",
-        'target_canonical = digest({"mutant": "changed-canonical-authority"})',
+        "compaction.py",
+        (
+            (
+                'if body["source_canonical_semantic_digest"] != body["target_canonical_semantic_digest"]:\n            raise CompactionError("representation compaction changed canonical semantic digest")',
+                'if False and body["source_canonical_semantic_digest"] != body["target_canonical_semantic_digest"]:\n            raise CompactionError("representation compaction changed canonical semantic digest")',
+            ),
+        ),
         "test_wave7_compaction.py",
     ),
 )
@@ -117,11 +132,26 @@ def _run_one(mutation: Mutation) -> tuple[bool, str]:
         package_root = temp / "src" / "nolane_plan"
         shutil.copytree(SOURCE, package_root)
         target = package_root / mutation.path
-        original = target.read_text(encoding="utf-8")
-        count = original.count(mutation.old)
-        if count != 1:
-            return False, f"mutation target count={count}, expected 1"
-        target.write_text(original.replace(mutation.old, mutation.new, 1), encoding="utf-8")
+        mutated = target.read_text(encoding="utf-8")
+        for old, new in mutation.replacements:
+            count = mutated.count(old)
+            if count != 1:
+                return False, f"mutation target count={count}, expected 1 in {mutation.path}"
+            mutated = mutated.replace(old, new, 1)
+
+        # The authority-equivalence mutant needs a semantic delta in addition to
+        # disabling the guard; keep both edits in production source and let the
+        # focused compaction tests observe the changed result.
+        if mutation.name == "compaction_authority_equivalence_break":
+            runtime = package_root / "compaction_runtime.py"
+            runtime_text = runtime.read_text(encoding="utf-8")
+            old = "target_canonical = canonical_semantic_digest(self)"
+            new = 'target_canonical = digest({"mutant": "changed-canonical-authority"})'
+            if runtime_text.count(old) != 1:
+                return False, "compaction authority-equivalence runtime target is not unique"
+            runtime.write_text(runtime_text.replace(old, new, 1), encoding="utf-8")
+
+        target.write_text(mutated, encoding="utf-8")
 
         env = os.environ.copy()
         env["PYTHONPATH"] = str(temp / "src")
