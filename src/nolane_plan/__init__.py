@@ -3,6 +3,7 @@
 from .authority_lineage_patch import install_authority_lineage_patch
 from .authority_lineage_replay_fix import install_authority_lineage_replay_fix
 from .authority_lineage_runtime import install_authority_lineage_runtime
+from .cancellation_runtime import install_cancellation_runtime
 from .compaction_runtime import install_compaction_runtime
 from .kernel import PlanKernel
 from .lineage_recovery import install_lineage_recovery
@@ -42,6 +43,7 @@ install_compaction_runtime(PlanKernel)
 install_authority_lineage_runtime(PlanKernel)
 install_authority_lineage_patch(PlanKernel)
 install_authority_lineage_replay_fix(PlanKernel)
+install_cancellation_runtime(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
 __version__ = "0.7.0a1"
