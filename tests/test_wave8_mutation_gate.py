@@ -64,6 +64,14 @@ class Wave8MutationGateTests(unittest.TestCase):
             with self.subTest(returncode=returncode, output=output):
                 self.assertEqual(gate.ProbeOutcome.INVALID, gate.classify_probe_result(returncode, output, target))
 
+    def test_deadline_and_relocation_oracles_kill_their_target_mutants(self) -> None:
+        gate = load_gate()
+        for mutant_id in ("X05", "X11"):
+            with self.subTest(mutant_id=mutant_id):
+                mutation = next(row for row in gate.MUTATIONS if row.mutant_id == mutant_id)
+                outcome, detail = gate.run_mutation(mutation)
+                self.assertEqual(gate.ProbeOutcome.KILLED, outcome, detail)
+
 
 if __name__ == "__main__":
     unittest.main()
