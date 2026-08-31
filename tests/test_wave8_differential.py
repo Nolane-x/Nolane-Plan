@@ -30,15 +30,16 @@ class Wave8DifferentialTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first, third)
 
-    def test_d08_binding_diagnostics_exposes_exact_live_replay_delta(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="nolane-wave8-d08-diagnostic-") as temp:
+    def test_d08_restart_preserves_exact_proof_source_lineage_binding(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="nolane-wave8-d08-source-lineage-") as temp:
             root = Path(temp)
             kernel, authorization, _, _ = build_proof_authorized_kernel(0, root)
             live = dict(kernel.proof_authorization_bindings[authorization.id])
+            self.assertIn("proof_source_lineage_digest", live)
             kernel.save_snapshot()
             restored = PlanKernel.open(root)
             replayed = dict(restored.proof_authorization_bindings[authorization.id])
-            self.assertEqual(live, replayed, f"live={live!r} replayed={replayed!r}")
+            self.assertEqual(live, replayed)
 
     def test_unknown_differential_id_fails_closed(self) -> None:
         with self.assertRaises(ValueError):
