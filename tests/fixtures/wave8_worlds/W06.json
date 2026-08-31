@@ -1,0 +1,14 @@
+{
+  "world_id": "W06",
+  "title": "Dormant Hedge And Compaction",
+  "initial_state": {
+    "protected_fallback": true,
+    "representation_only_compaction": true,
+    "seed": 0
+  },
+  "event_schedule": ["P09@0", "M10@0", "M10@1", "C08@0"],
+  "invariant_ids": ["P09", "M10", "C08"],
+  "expected_terminal_classification": "HISTORY_AND_FALLBACK_RETAINED",
+  "measurement_names": ["scheduled_relations", "executed_seed_cases", "failed_relations"],
+  "measurements_gate_correctness": false
+}
