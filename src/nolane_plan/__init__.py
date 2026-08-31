@@ -13,6 +13,7 @@ from .lineage_runtime import install_lineage_runtime
 from .lineage_snapshot import install_lineage_snapshot
 from .migration_runtime import install_migration_runtime
 from .mission import MissionContract, MissionLedger
+from .multiwriter_runtime import install_multiwriter_runtime
 from .policy_recovery import install_policy_recovery
 from .policy_runtime import install_policy_runtime
 from .proof_recovery import install_proof_recovery
@@ -48,6 +49,7 @@ install_authority_lineage_replay_fix(PlanKernel)
 install_cancellation_runtime(PlanKernel)
 install_execution_contract_runtime(PlanKernel)
 install_destructive_compaction_runtime(PlanKernel)
+install_multiwriter_runtime(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
 __version__ = "0.8.0a1"
