@@ -16,7 +16,7 @@ from .lineage import SemanticRegimeKind
 from .lineage_recovery import canonical_semantic_digest
 from .migration import FieldMigrationDisposition, MigrationDisposition, MigrationManifest
 from .principals import InformationItem
-from .relocation import CandidateRegion, StateRelocator
+from .relocation import CandidateRegion, LocationStatus, StateRelocator
 from .schedulability import ReactionSchedulabilityEvaluator
 from .wave8_proof_fixture import build_proof_authorized_kernel
 from .wave8_registry import WAVE8_INVARIANTS, Wave8Counterexample
@@ -501,10 +501,16 @@ def _d10(seed: int) -> tuple[bool, str]:
             and forward.region_ids == reverse.region_ids
             and forward.decision_signatures == reverse.decision_signatures
         )
-        holds = ordered_equal and live == replayed and live == (
-            forward.status.value,
-            forward.region_ids,
-            forward.decision_signatures,
+        holds = (
+            forward.status is LocationStatus.AMBIGUOUS
+            and len(forward.decision_signatures) == 2
+            and ordered_equal
+            and live == replayed
+            and live == (
+                forward.status.value,
+                forward.region_ids,
+                forward.decision_signatures,
+            )
         )
         return holds, f"forward={forward!r} reverse={reverse!r} live={live!r} replayed={replayed!r}"
 
