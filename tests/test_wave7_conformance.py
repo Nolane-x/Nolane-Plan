@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
+from nolane_plan import PlanKernel
+from nolane_plan.actions import ActionIntent, AuthorityGrant
 from nolane_plan.wave7_conformance import WAVE7_CASES, WAVE7_TAXONOMY, run_wave7_conformance
 
 
@@ -55,6 +59,17 @@ class Wave7ConformanceTests(unittest.TestCase):
         self.assertEqual(tuple(WAVE7_TAXONOMY), ("LG", "MG", "RP", "GC"))
         self.assertTrue(all(name[:2] in WAVE7_TAXONOMY for name in WAVE7_CASES))
         self.assertTrue(all(callable(case.check) for case in WAVE7_CASES.values()))
+
+    def test_logical_only_authority_binding_is_rejected_by_exact_revision_identity(self):
+        root = Path(tempfile.mkdtemp(prefix="nolane-wave7-binding-"))
+        kernel = PlanKernel.create(root, "exact lineage", ("done",))
+        kernel.propose_action(ActionIntent("deploy", "deploy"))
+        kernel.add_grant(AuthorityGrant("grant", "agent:a", frozenset({"deploy"})))
+        authorization = kernel.authorize("deploy", "agent:a", ("grant",), 1)
+        binding = kernel.authorization_lineage_bindings[authorization.id]
+        exact = kernel.lineage.current("ActionIntent", authorization.action_id).revision_id
+        self.assertEqual(binding.action_revision_id, exact)
+        self.assertNotEqual(binding.action_revision_id, authorization.action_id)
 
     def test_all_wave7_adversarial_cases_are_defended(self):
         results = run_wave7_conformance()
