@@ -30,6 +30,12 @@ def _required(name: str, value: object) -> str:
     return text
 
 
+def _optional_digest(name: str, value: object | None) -> str | None:
+    if value is None:
+        return None
+    return _required(name, value)
+
+
 @dataclass(frozen=True, slots=True)
 class StorageCapabilityProfile:
     backend_id: str
@@ -103,6 +109,7 @@ class AuthorityEpoch:
     epoch: int
     predecessor_epoch: int | None
     writer_id: str
+    writer_identity_digest: str | None
     acquisition_revision: int
     acquisition_receipt_digest: str
     canonical_digest: str
@@ -117,9 +124,11 @@ class AuthorityEpoch:
         predecessor_epoch: int | None,
         writer_id: str,
         acquisition_revision: int,
+        writer_identity_digest: str | None = None,
     ) -> "AuthorityEpoch":
         backend = _required("backend_id", backend_id)
         writer = _required("writer_id", writer_id)
+        identity_digest = _optional_digest("writer_identity_digest", writer_identity_digest)
         backend_rev = int(backend_revision)
         epoch_value = int(epoch)
         acquisition_rev = int(acquisition_revision)
@@ -141,6 +150,7 @@ class AuthorityEpoch:
             "epoch": epoch_value,
             "predecessor_epoch": predecessor,
             "writer_id": writer,
+            "writer_identity_digest": identity_digest,
             "acquisition_revision": acquisition_rev,
         }
         acquisition_receipt_digest = digest({"kind": "authority_epoch_acquisition", **body})
@@ -151,6 +161,7 @@ class AuthorityEpoch:
             epoch=epoch_value,
             predecessor_epoch=predecessor,
             writer_id=writer,
+            writer_identity_digest=identity_digest,
             acquisition_revision=acquisition_rev,
             acquisition_receipt_digest=acquisition_receipt_digest,
             canonical_digest=canonical_digest,
@@ -165,6 +176,7 @@ class ConditionalWriteReceipt:
     committed_revision: int
     epoch: int
     writer_id: str
+    writer_identity_digest: str | None
     payload_digest: str
     durable_acknowledged: bool
     canonical_digest: str
@@ -181,9 +193,11 @@ class ConditionalWriteReceipt:
         writer_id: str,
         payload_digest: str,
         durable_acknowledged: bool,
+        writer_identity_digest: str | None = None,
     ) -> "ConditionalWriteReceipt":
         backend = _required("backend_id", backend_id)
         writer = _required("writer_id", writer_id)
+        identity_digest = _optional_digest("writer_identity_digest", writer_identity_digest)
         payload = _required("payload_digest", payload_digest)
         backend_rev = int(backend_revision)
         expected = int(expected_revision)
@@ -204,6 +218,7 @@ class ConditionalWriteReceipt:
             "committed_revision": committed,
             "epoch": epoch_value,
             "writer_id": writer,
+            "writer_identity_digest": identity_digest,
             "payload_digest": payload,
             "durable_acknowledged": True,
         }
@@ -246,7 +261,13 @@ class InMemoryProductionStore:
         with self._lock:
             return copy.deepcopy(self._payload)
 
-    def acquire_epoch(self, writer_id: str, expected_epoch: int | None) -> AuthorityEpoch:
+    def acquire_epoch(
+        self,
+        writer_id: str,
+        expected_epoch: int | None,
+        *,
+        writer_identity_digest: str | None = None,
+    ) -> AuthorityEpoch:
         with self._lock:
             self.capabilities.require_strong_multiwriter()
             current_epoch = None if self._epoch is None else self._epoch.epoch
@@ -262,6 +283,7 @@ class InMemoryProductionStore:
                 epoch=next_epoch,
                 predecessor_epoch=current_epoch,
                 writer_id=writer_id,
+                writer_identity_digest=writer_identity_digest,
                 acquisition_revision=self._revision,
             )
             self._epoch = value
@@ -303,6 +325,7 @@ class InMemoryProductionStore:
                 committed_revision=next_revision,
                 epoch=current.epoch,
                 writer_id=current.writer_id,
+                writer_identity_digest=current.writer_identity_digest,
                 payload_digest=digest(payload_copy),
                 durable_acknowledged=self.capabilities.durable_acknowledgement,
             )
