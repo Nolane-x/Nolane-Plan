@@ -26,6 +26,7 @@ from .seal_lifecycle import install_seal_lifecycle
 from .trust_recovery import install_trust_recovery
 from .trust_runtime import install_trust_runtime
 from .types import RiskClass
+from .wave9_snapshot import install_wave9_snapshot
 
 install_seal_lifecycle()
 install_runtime_extensions(PlanKernel)
@@ -50,6 +51,7 @@ install_cancellation_runtime(PlanKernel)
 install_execution_contract_runtime(PlanKernel)
 install_destructive_compaction_runtime(PlanKernel)
 install_multiwriter_runtime(PlanKernel)
+install_wave9_snapshot(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
 __version__ = "0.8.0a1"
