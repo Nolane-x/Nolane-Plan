@@ -1,0 +1,14 @@
+{
+  "world_id": "W05",
+  "title": "Migration And Ambiguous External Effect",
+  "initial_state": {
+    "idempotent": false,
+    "external_effect": "unknown",
+    "seed": 0
+  },
+  "event_schedule": ["C05@0", "C07@0", "D06@0", "D06@1"],
+  "invariant_ids": ["C05", "C07", "D06"],
+  "expected_terminal_classification": "RECONCILIATION_AND_RECHECK_REQUIRED",
+  "measurement_names": ["scheduled_relations", "executed_seed_cases", "failed_relations"],
+  "measurements_gate_correctness": false
+}
