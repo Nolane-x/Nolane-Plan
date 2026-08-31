@@ -13,6 +13,7 @@ from .lineage import SemanticRegimeKind
 from .lineage_recovery import canonical_semantic_digest
 from .migration import FieldMigrationDisposition, MigrationDisposition, MigrationError, MigrationManifest
 from .types import AuthorizationError, ReplayError
+from .wave8_proof_fixture import build_proof_authorized_kernel
 from .wave8_registry import WAVE8_INVARIANTS, Wave8Counterexample
 
 
@@ -32,7 +33,7 @@ _FAULT_OPERATIONS = {
     "C01": ("snapshot.save", "fault:corrupt_outer_snapshot_digest", "restart:open"),
     "C02": ("snapshot.save", "suffix:mission_revision", "restart:open", "compare:semantic_digest"),
     "C03": ("snapshot.save", "fault:append_unknown_correctness_event", "restart:open"),
-    "C04": ("authorize", "fault:drop_authority_lineage_binding", "dispatch"),
+    "C04": ("authorize:proof-carrying", "fault:drop_derived_authority_closure", "dispatch"),
     "C05": ("snapshot.save", "dispatch:durable", "fault:adapter_exception", "restart:open", "retry"),
     "C06": ("authorize", "fault:leave_dispatch_recorded", "migration:attempt_without_bridge"),
     "C07": ("snapshot.save", "migration:root_switch", "restart:open", "authority:recheck"),
@@ -165,7 +166,7 @@ def _c03(schedule: Wave8FaultSchedule) -> tuple[bool, str]:
         root = Path(temp)
         kernel = _kernel(schedule.seed, root)
         kernel.save_snapshot()
-        kernel._record(
+        kernel.journal.append(
             "proof.unknown_wave8_correctness_event",
             {"seed": schedule.seed, "correctness_significant": True},
         )
@@ -180,12 +181,14 @@ def _c03(schedule: Wave8FaultSchedule) -> tuple[bool, str]:
 
 def _c04(schedule: Wave8FaultSchedule) -> tuple[bool, str]:
     with tempfile.TemporaryDirectory(prefix="nolane-wave8-c04-") as temp:
-        kernel, authorization, principal = _authorized_kernel(schedule.seed, Path(temp))
-        kernel.authorization_lineage_bindings.pop(authorization.id, None)
+        kernel, authorization, principal, _ = build_proof_authorized_kernel(schedule.seed, Path(temp))
+        if authorization.id not in kernel.proof_authorization_bindings:
+            return False, "proof-carrying authorization lacks derived proof binding before injected fault"
+        kernel.authority_lineage_closure_bindings.pop(authorization.id, None)
         adapter = _CountingAdapter()
         blocked = False
         try:
-            kernel.dispatch(authorization.id, principal, adapter, 2)
+            kernel.dispatch(authorization.id, principal, adapter, 60)
         except (AuthorizationError, KeyError):
             blocked = True
         return blocked and adapter.calls == 0, f"blocked={blocked} adapter_calls={adapter.calls}"
@@ -356,7 +359,7 @@ def _c10(schedule: Wave8FaultSchedule) -> tuple[bool, str]:
                 "adapter_revision": 1,
             },
         )
-        live = kernel.cancel_authorized_action(authorization.id, reason="wave8-race")
+        live = kernel.cancel_authorized_action(authorization.id, detail="wave8-race")
         from .execution import TransactionState
         from . import PlanKernel
 
