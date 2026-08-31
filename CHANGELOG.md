@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.0a1 — 2026-08-31
+
+- Added the frozen Wave-8 conformance registry with exactly 68 invariants: P01–P10 properties, M01–M12 metamorphic relations, C01–C10 deterministic chaos cases, D01–D10 differential/restart relations, X01–X12 constitutional mutants, W01–W06 reference worlds and S01–S08 coverage invariants. The release freezes registry digest `d9f4e9fd9cd111c3a458b2018686060b74235102702352230f7546360a942dfc`.
+- Added deterministic bounded generators for principal information, evidence/support, selection, policy, resources, handoff, resurrection, relocation, lineage/regimes, migration and replay/compaction, plus deterministic counterexample minimization.
+- Added executable P01–P10 and M01–M12 suites covering canonical determinism, authority anti-escalation/monotonicity, hard vetoes, temporal/resource contraction, lineage/history preservation, unknown non-promotion and semantics-preserving transformations.
+- Added C01–C10 deterministic fault schedules and D01–D10 live/restart/replay differential relations for snapshot corruption, suffix replay, unknown events, authorization interruption, ambiguous dispatch, migration, compaction, handoff, cancellation, principal/proof/policy/schedulability and relocation reconstruction.
+- Added a durable cancellation fence: `AUTHORIZED -> CANCELLED_PRE_DISPATCH` is terminal; cancellation after durable dispatch becomes `CANCELLATION_PENDING`; pending non-idempotent retries are blocked; only exact transaction/principal/adapter-bound reconciliation evidence resolves applied vs not-applied outcomes; cancellation state survives snapshot and suffix replay.
+- Exhausted bounded relocation across finite region sets without collapsing decision-distinct ambiguity; decision-relevant relocation advances location lineage and stales old decision/authorization authority.
+- Added a repository-owned migration matrix covering supported historical snapshot schemas v2 through v6 into v7, with checked-in deterministic fixtures and conservative non-invention of newer authority layers.
+- Closed bounded finite global-exclusion and N-way proof-context composition surfaces while keeping open/opaque candidate universes and unsupported constraint theories UNKNOWN; strengthened resource/capacity monotonicity exhaustion.
+- Added six checked-in correctness worlds: Principal Relay, Open-World Recovery, Deadline Resource Contention, Handoff Chain, Migration + Ambiguous External Effect and Dormant Hedge + Compaction. Their measurements are explicitly research-only and do not gate correctness or claim superiority.
+- Added the X01–X12 target-specific mutation gate. A kill counts only when the declared target assertion fails; setup/import/syntax/timeout/non-target failures are invalid. Pre-release evidence kills 12/12 mutants with `WAVE8_MUTATIONS_INVALID=0`.
+- Added unified Wave-8 conformance and S01–S08 coverage reconciliation. Pre-release implementation head `c75cb337f84a1b0ad0477b2f892723fd8ff672a6`, CI `33361860635`, passes Python 3.11/3.12/3.13 with 464 unit/integration tests, compile, the `108 -> 0` oracle, all prior Wave gates, Wave-8 conformance, coverage and demo. The pre-release conformance digest is `7c41aeb2a075a997451e024ccdc53554aada45ad86967242c53706f98fd42f33`; coverage digest is `60019f5f3ff3d723849bb912bbf0f47b187347a6cd676198d537af6f56b5a3dd`.
+- Wave 8 remains a bounded reference-runtime closure. Generalized opaque/open candidate universes, generalized constraint theories, arbitrary external historical schemas, adapter-specific physical cancellation guarantees, destructive production storage compaction, distributed/multi-writer correctness, formal global proof, production hardening and empirical superiority remain PARTIAL, BOUNDARY or RESEARCH rather than being promoted to GREEN.
+
 ## 0.7.0a1 — 2026-08-31
 
 - Added `CanonicalLineageRevision`, `SemanticRegimeRevision` and a kernel-owned immutable lineage registry with stable logical identity, globally owned exact revision IDs, causal writer sequence, parent/provenance/debt lineage and deterministic semantic-root hashing for declared strategic runtime families.

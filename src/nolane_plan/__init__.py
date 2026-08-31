@@ -46,4 +46,4 @@ install_authority_lineage_replay_fix(PlanKernel)
 install_cancellation_runtime(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
-__version__ = "0.7.0a1"
+__version__ = "0.8.0a1"

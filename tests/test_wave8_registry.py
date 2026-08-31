@@ -30,6 +30,8 @@ EXPECTED_LAYER_BY_PREFIX = {
     "S": Wave8Layer.COVERAGE,
 }
 
+EXPECTED_REGISTRY_DIGEST = "d9f4e9fd9cd111c3a458b2018686060b74235102702352230f7546360a942dfc"
+
 
 class Wave8RegistryTests(unittest.TestCase):
     def test_registry_is_unique_and_frozen_at_sixty_eight_invariants(self) -> None:
@@ -54,7 +56,7 @@ class Wave8RegistryTests(unittest.TestCase):
         forward = wave8_registry_digest(WAVE8_INVARIANTS)
         reverse = wave8_registry_digest(tuple(reversed(WAVE8_INVARIANTS)))
         self.assertEqual(forward, reverse)
-        self.assertEqual(64, len(forward))
+        self.assertEqual(EXPECTED_REGISTRY_DIGEST, forward)
 
         first = WAVE8_INVARIANTS[0]
         changed = first.__class__(
