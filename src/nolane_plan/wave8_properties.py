@@ -350,7 +350,7 @@ def _p07(recipe: Wave8CaseRecipe) -> tuple[bool, str]:
     )
     baseline = HandoffLivenessEvaluator.evaluate(information_available_by_deadline=True, **kwargs)
     delayed = HandoffLivenessEvaluator.evaluate(information_available_by_deadline=False, **kwargs)
-    holds = (not delayed.supports_safe_handoff) or baseline.supports_safe_handoff
+    holds = baseline.supports_safe_handoff and not delayed.supports_safe_handoff
     return holds, f"baseline={baseline.status.value} delayed={delayed.status.value}"
 
 
