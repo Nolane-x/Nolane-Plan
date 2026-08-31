@@ -1,0 +1,14 @@
+{
+  "world_id": "W04",
+  "title": "Handoff Chain",
+  "initial_state": {
+    "handoff_budget": 5,
+    "stutter_budget": 1,
+    "seed": 0
+  },
+  "event_schedule": ["P07@0", "P07@1", "C09@0", "C09@1"],
+  "invariant_ids": ["P07", "C09"],
+  "expected_terminal_classification": "HANDOFF_LIVENESS_BOUNDED",
+  "measurement_names": ["scheduled_relations", "executed_seed_cases", "failed_relations"],
+  "measurements_gate_correctness": false
+}
