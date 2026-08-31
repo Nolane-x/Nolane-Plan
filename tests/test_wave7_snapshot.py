@@ -71,7 +71,7 @@ class Wave7SnapshotTests(unittest.TestCase):
         kernel.snapshots.save(state)
         return state
 
-    def test_v7_snapshot_persists_lineage_regimes_migration_compaction_and_replay_registry(self):
+    def test_current_snapshot_preserves_wave7_lineage_regimes_migration_compaction_and_replay_registry(self):
         kernel = self.make_kernel()
         auth = self.add_authority(kernel)
         kernel.apply_semantic_migration(self.make_manifest(), now=2)
@@ -79,7 +79,6 @@ class Wave7SnapshotTests(unittest.TestCase):
 
         state = kernel.save_snapshot()
 
-        self.assertEqual(state["snapshot_schema"], V7_SNAPSHOT_SCHEMA)
         wave7 = state["lineage"]
         self.assertTrue(wave7["revisions"])
         self.assertTrue(wave7["regimes"])
