@@ -54,5 +54,9 @@ jobs:
         run: python -m nolane_plan.wave6_conformance
       - name: Wave 6 constitutional mutation gate
         run: python scripts/wave6_mutation_gate.py
+      - name: Wave 7 adversarial conformance
+        run: python -m nolane_plan.wave7_conformance
+      - name: Wave 7 constitutional mutation gate
+        run: python scripts/wave7_mutation_gate.py
       - name: End-to-end demo
         run: python -m nolane_plan demo --root .ci-demo
