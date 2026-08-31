@@ -58,5 +58,8 @@ jobs:
         run: python -m nolane_plan.wave7_conformance
       - name: Wave 7 constitutional mutation gate
         run: python scripts/wave7_mutation_gate.py
+      - name: Wave 8 target-specific mutation gate
+        if: matrix.python-version == '3.11'
+        run: python scripts/wave8_mutation_gate.py
       - name: End-to-end demo
         run: python -m nolane_plan demo --root .ci-demo
