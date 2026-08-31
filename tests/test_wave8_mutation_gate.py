@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
 
@@ -30,6 +31,7 @@ def load_gate():
     if spec is None or spec.loader is None:
         raise AssertionError("cannot load Wave-8 mutation gate")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
