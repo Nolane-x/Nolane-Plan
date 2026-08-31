@@ -72,9 +72,9 @@ MUTATIONS = (
         "D02", "differential",
     ),
     _one(
-        "X07", "unknown_event_fail_open", "replay_registry.py",
-        '            if correctness_significant:\n                raise ReplayError(f"unregistered correctness-significant replay event: {event_type}")',
-        '            if False and correctness_significant:\n                raise ReplayError(f"unregistered correctness-significant replay event: {event_type}")',
+        "X07", "unknown_event_fail_open", "lineage_recovery.py",
+        '    spec = DEFAULT_REPLAY_REGISTRY.require(entry.event_type, correctness_significant=True)\n    if spec is None:\n        raise ReplayError(f"missing replay registry entry: {entry.event_type}")',
+        '    try:\n        spec = DEFAULT_REPLAY_REGISTRY.require(entry.event_type, correctness_significant=True)\n    except ReplayError:\n        return\n    if spec is None:\n        return',
         "C03", "chaos",
     ),
     _one(
