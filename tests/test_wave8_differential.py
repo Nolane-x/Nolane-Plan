@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
+from nolane_plan import PlanKernel
 from nolane_plan.wave8_differential import (
     DIFFERENTIAL_IDS,
     run_wave8_differential,
     run_wave8_differential_invariant,
 )
+from nolane_plan.wave8_proof_fixture import build_proof_authorized_kernel
 
 
 class Wave8DifferentialTests(unittest.TestCase):
@@ -25,6 +29,16 @@ class Wave8DifferentialTests(unittest.TestCase):
         self.assertEqual((), first)
         self.assertEqual(first, second)
         self.assertEqual(first, third)
+
+    def test_d08_binding_diagnostics_exposes_exact_live_replay_delta(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="nolane-wave8-d08-diagnostic-") as temp:
+            root = Path(temp)
+            kernel, authorization, _, _ = build_proof_authorized_kernel(0, root)
+            live = dict(kernel.proof_authorization_bindings[authorization.id])
+            kernel.save_snapshot()
+            restored = PlanKernel.open(root)
+            replayed = dict(restored.proof_authorization_bindings[authorization.id])
+            self.assertEqual(live, replayed, f"live={live!r} replayed={replayed!r}")
 
     def test_unknown_differential_id_fails_closed(self) -> None:
         with self.assertRaises(ValueError):
