@@ -43,6 +43,10 @@ MUTATIONS = (
                 'if False and revision in parents:\n            raise LineageError("revision cannot be its own parent")',
             ),
             (
+                'if parent not in self._revisions:\n                    raise LineageError(f"unknown parent lineage revision: {parent}")',
+                'if parent not in self._revisions and parent != revision.revision_id:\n                    raise LineageError(f"unknown parent lineage revision: {parent}")',
+            ),
+            (
                 'for parent in revision.parent_revision_ids:\n            if parent == revision.revision_id:\n                raise LineageError("lineage parent cycle detected")',
                 'for parent in revision.parent_revision_ids:\n            if False and parent == revision.revision_id:\n                raise LineageError("lineage parent cycle detected")',
             ),
@@ -139,9 +143,6 @@ def _run_one(mutation: Mutation) -> tuple[bool, str]:
                 return False, f"mutation target count={count}, expected 1 in {mutation.path}"
             mutated = mutated.replace(old, new, 1)
 
-        # The authority-equivalence mutant needs a semantic delta in addition to
-        # disabling the guard; keep both edits in production source and let the
-        # focused compaction tests observe the changed result.
         if mutation.name == "compaction_authority_equivalence_break":
             runtime = package_root / "compaction_runtime.py"
             runtime_text = runtime.read_text(encoding="utf-8")
