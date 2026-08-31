@@ -62,8 +62,6 @@ def _m01(recipe: Wave8CaseRecipe) -> tuple[bool, str]:
 
 
 def _m02(recipe: Wave8CaseRecipe) -> tuple[bool, str]:
-    # Wall time is explicitly informational in canonical lineage identity.  This
-    # is a safe presentation/metadata perturbation; semantic IDs are untouched.
     left = _revision(recipe.seed, wall_time=1.0, provenance=(f"source:{recipe.seed}",))
     right = _revision(recipe.seed, wall_time=999999.0, provenance=(f"source:{recipe.seed}",))
     holds = left.lineage_digest == right.lineage_digest and left.semantic_digest == right.semantic_digest
@@ -131,7 +129,12 @@ def _single_support(seed: int, *, include_irrelevant: bool):
 def _m03(recipe: Wave8CaseRecipe) -> tuple[bool, str]:
     base = _single_support(recipe.seed, include_irrelevant=False)
     transformed = _single_support(recipe.seed, include_irrelevant=True)
-    projection = lambda row: (row.status, row.surviving_clause_ids, row.grounding_roots, row.blockers)
+    projection = lambda row: (
+        row.status,
+        row.surviving_clause_refs,
+        row.grounding_roots,
+        row.assessment_digest,
+    )
     holds = projection(base) == projection(transformed)
     return holds, f"base={projection(base)!r} transformed={projection(transformed)!r}"
 
