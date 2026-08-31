@@ -1,0 +1,14 @@
+{
+  "world_id": "W02",
+  "title": "Open-World Recovery",
+  "initial_state": {
+    "world_model": "incomplete",
+    "unknown_events_fail_closed": true,
+    "seed": 0
+  },
+  "event_schedule": ["P10@0", "P10@1", "C03@0", "C03@1"],
+  "invariant_ids": ["P10", "C03"],
+  "expected_terminal_classification": "UNKNOWN_QUARANTINED",
+  "measurement_names": ["scheduled_relations", "executed_seed_cases", "failed_relations"],
+  "measurements_gate_correctness": false
+}
