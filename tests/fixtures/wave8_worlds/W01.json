@@ -1,0 +1,14 @@
+{
+  "world_id": "W01",
+  "title": "Principal Relay",
+  "initial_state": {
+    "principals": 3,
+    "observation_mode": "delayed-asymmetric",
+    "seed": 0
+  },
+  "event_schedule": ["P02@0", "P02@1", "D07@0", "D07@1"],
+  "invariant_ids": ["P02", "D07"],
+  "expected_terminal_classification": "ASYMMETRIC_OBSERVATION_PRESERVED",
+  "measurement_names": ["scheduled_relations", "executed_seed_cases", "failed_relations"],
+  "measurements_gate_correctness": false
+}
