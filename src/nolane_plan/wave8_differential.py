@@ -18,6 +18,7 @@ from .migration import FieldMigrationDisposition, MigrationDisposition, Migratio
 from .principals import InformationItem
 from .relocation import CandidateRegion, StateRelocator
 from .schedulability import ReactionSchedulabilityEvaluator
+from .wave8_proof_fixture import build_proof_authorized_kernel
 from .wave8_registry import WAVE8_INVARIANTS, Wave8Counterexample
 
 
@@ -257,21 +258,38 @@ def _d07(seed: int) -> tuple[bool, str]:
 def _d08(seed: int) -> tuple[bool, str]:
     with tempfile.TemporaryDirectory(prefix="nolane-wave8-d08-") as temp:
         root = Path(temp)
-        kernel, authorization, _ = _authorized_kernel(seed, root)
+        kernel, authorization, _, artifact_revision = build_proof_authorized_kernel(seed, root)
         kernel._assert_authorization_lineage_current(authorization.id)
-        live_binding = digest(kernel.authorization_lineage_bindings[authorization.id])
-        live_closure = digest(kernel.authority_lineage_closure_bindings[authorization.id])
+        live_proof_binding = dict(kernel.proof_authorization_bindings[authorization.id])
+        live_closure = dict(kernel.authority_lineage_closure_bindings[authorization.id])
+        live_assessment = kernel.evaluate_proof_authority(artifact_revision, active_context={"prod"})
+        required_exact = {
+            "proof_lineage_revision",
+            "proof_manifest_lineage_revision",
+            "proof_support_lineage_revision",
+        }
+        if not required_exact.issubset(live_closure):
+            return False, f"live closure lacks exact proof lineage fields: {sorted(required_exact - set(live_closure))!r}"
         kernel.save_snapshot()
         from . import PlanKernel
 
         restored = PlanKernel.open(root)
         restored._assert_authorization_lineage_current(authorization.id)
-        replayed_binding = digest(restored.authorization_lineage_bindings[authorization.id])
-        replayed_closure = digest(restored.authority_lineage_closure_bindings[authorization.id])
-        holds = live_binding == replayed_binding and live_closure == replayed_closure
+        replayed_proof_binding = dict(restored.proof_authorization_bindings[authorization.id])
+        replayed_closure = dict(restored.authority_lineage_closure_bindings[authorization.id])
+        replayed_assessment = restored.evaluate_proof_authority(artifact_revision, active_context={"prod"})
+        holds = (
+            digest(live_proof_binding) == digest(replayed_proof_binding)
+            and live_closure.get("closure_digest") == replayed_closure.get("closure_digest")
+            and live_assessment.current_usable
+            and replayed_assessment.current_usable
+            and live_assessment.support.status == replayed_assessment.support.status
+            and live_assessment.support.grounding_roots == replayed_assessment.support.grounding_roots
+        )
         return holds, (
-            f"live_binding={live_binding} replayed_binding={replayed_binding} "
-            f"live_closure={live_closure} replayed_closure={replayed_closure}"
+            f"proof_binding={digest(live_proof_binding)}/{digest(replayed_proof_binding)} "
+            f"closure={live_closure.get('closure_digest')}/{replayed_closure.get('closure_digest')} "
+            f"support={live_assessment.support.status.value}/{replayed_assessment.support.status.value}"
         )
 
 
