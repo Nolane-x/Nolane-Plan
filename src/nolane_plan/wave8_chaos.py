@@ -181,7 +181,7 @@ def _c03(schedule: Wave8FaultSchedule) -> tuple[bool, str]:
 def _c04(schedule: Wave8FaultSchedule) -> tuple[bool, str]:
     with tempfile.TemporaryDirectory(prefix="nolane-wave8-c04-") as temp:
         kernel, authorization, principal = _authorized_kernel(schedule.seed, Path(temp))
-        kernel.authority_lineage_closure_bindings.pop(authorization.id, None)
+        kernel.authorization_lineage_bindings.pop(authorization.id, None)
         adapter = _CountingAdapter()
         blocked = False
         try:
