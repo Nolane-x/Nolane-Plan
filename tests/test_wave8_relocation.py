@@ -113,8 +113,9 @@ class Wave8RelocationTests(unittest.TestCase):
         authorization = fixture.authorize()
         epoch = fixture.policy["epoch"]
         adapter = CountingAdapter()
+        binding = dict(kernel.decision_epoch_lineage_bindings[epoch.epoch_id])
 
-        kernel._assert_decision_epoch_current(epoch.epoch_id)
+        self.assertEqual(str(kernel._location_revision), binding["strategic_location_revision"])
         old_location_revision = kernel._location_revision
         kernel.register_region(CandidateRegion("region:new", {}, "new-decision"))
         kernel._relocate_after_commit()
@@ -122,8 +123,11 @@ class Wave8RelocationTests(unittest.TestCase):
         self.assertGreater(kernel._location_revision, old_location_revision)
         self.assertEqual(LocationStatus.LOCATED, kernel.strategic_location.status)
         self.assertEqual(("new-decision",), kernel.strategic_location.decision_signatures)
-        with self.assertRaises(AuthorizationError):
-            kernel._assert_decision_epoch_current(epoch.epoch_id)
+        self.assertNotEqual(str(kernel._location_revision), binding["strategic_location_revision"])
+        self.assertNotEqual(
+            kernel.lineage.current("StrategicLocation", "strategic-location").revision_id,
+            binding["strategic_location_lineage_revision"],
+        )
         with self.assertRaises(AuthorizationError):
             kernel.dispatch(authorization.id, "agent:a", adapter, 60)
         self.assertEqual(0, adapter.calls)
