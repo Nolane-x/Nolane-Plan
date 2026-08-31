@@ -102,8 +102,19 @@ def _p02(recipe: Wave8CaseRecipe) -> tuple[bool, str]:
     broad = registry.build_partition(principal, items, 2)
     registry.update_access(principal, {"public"})
     narrowed = registry.build_partition(principal, items, 2)
-    holds = set(narrowed.item_ids).issubset(broad.item_ids)
-    return holds, f"broad={broad.item_ids!r} narrowed={narrowed.item_ids!r}"
+    expected_broad = tuple(sorted(item.id for item in items))
+    expected_narrowed = tuple(
+        sorted(item.id for item in items if item.tags.issubset(frozenset({"public"})))
+    )
+    holds = (
+        broad.item_ids == expected_broad
+        and narrowed.item_ids == expected_narrowed
+        and set(expected_narrowed) < set(expected_broad)
+    )
+    return holds, (
+        f"broad={broad.item_ids!r} narrowed={narrowed.item_ids!r} "
+        f"expected_broad={expected_broad!r} expected_narrowed={expected_narrowed!r}"
+    )
 
 
 def _support_fixture(seed: int, *, second_current: bool = True):
