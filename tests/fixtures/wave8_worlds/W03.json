@@ -1,0 +1,15 @@
+{
+  "world_id": "W03",
+  "title": "Deadline Resource Contention",
+  "initial_state": {
+    "workers": 2,
+    "writer_slots": 1,
+    "approval_slots": 1,
+    "seed": 0
+  },
+  "event_schedule": ["P06@0", "P06@1", "D09@0", "D09@1"],
+  "invariant_ids": ["P06", "D09"],
+  "expected_terminal_classification": "BOUNDED_CONTENTION_CLASSIFIED",
+  "measurement_names": ["scheduled_relations", "executed_seed_cases", "failed_relations"],
+  "measurements_gate_correctness": false
+}
