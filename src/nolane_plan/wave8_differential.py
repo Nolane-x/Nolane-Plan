@@ -249,7 +249,7 @@ def _d07(seed: int) -> tuple[bool, str]:
         holds = (
             live_partition.digest == replayed_partition.digest
             and live_partition.item_ids == replayed_partition.item_ids
-            and kernel.principals.get(principal).revision == restored.principals.get(principal).revision
+            and kernel.principals.profile(principal).revision == restored.principals.profile(principal).revision
         )
         return holds, f"live={live_partition.digest}:{live_partition.item_ids!r} replayed={replayed_partition.digest}:{replayed_partition.item_ids!r}"
 
