@@ -79,7 +79,7 @@ MUTATIONS = (
         "migration.py",
         "if row.debt_ref not in debts:\n                    raise MigrationError(f\"migration debt {row.debt_ref!r} is not declared in new_debt_refs\")",
         "if False and row.debt_ref not in debts:\n                    raise MigrationError(f\"migration debt {row.debt_ref!r} is not declared in new_debt_refs\")",
-        "test_wave7_migration.py",
+        "test_wave7_conformance.py",
     ),
     _one(
         "ambiguous_action_migration_bypass",
