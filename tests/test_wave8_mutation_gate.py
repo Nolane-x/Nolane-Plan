@@ -74,6 +74,14 @@ class Wave8MutationGateTests(unittest.TestCase):
                 outcome, detail = gate.run_mutation(mutation)
                 self.assertEqual(gate.ProbeOutcome.KILLED, outcome, detail)
 
+    def test_principal_and_unknown_event_guards_kill_their_target_mutants(self) -> None:
+        gate = load_gate()
+        for mutant_id in ("X01", "X07"):
+            with self.subTest(mutant_id=mutant_id):
+                mutation = next(row for row in gate.MUTATIONS if row.mutant_id == mutant_id)
+                outcome, detail = gate.run_mutation(mutation)
+                self.assertEqual(gate.ProbeOutcome.KILLED, outcome, detail)
+
 
 if __name__ == "__main__":
     unittest.main()
