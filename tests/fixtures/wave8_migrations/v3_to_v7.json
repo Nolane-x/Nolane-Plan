@@ -1,0 +1,9 @@
+{
+  "source_schema": "nolane-plan-runtime-snapshot-v3",
+  "target_schema": "nolane-plan-runtime-snapshot-v7",
+  "drop_layers": ["proof", "policy", "schedulability", "lineage"],
+  "must_restore_empty": ["proof_authority_assessments", "policy_nodes", "schedulability_certificates"],
+  "expected_dispositions": ["PRESERVED_EXACTLY", "RECOMPUTED_FROM_CANONICAL_INPUTS", "INVALIDATED_REQUIRES_RECHECK"],
+  "unsupported_cases": ["opaque-v3-proof-extension", "unknown-correctness-event"],
+  "fixture_digest": "f6975fbccfd6f0e78bfe6ce24260883600d608e99f6818ded74ad70c87d9fd8a"
+}

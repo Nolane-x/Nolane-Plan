@@ -1,0 +1,9 @@
+{
+  "source_schema": "nolane-plan-runtime-snapshot-v6",
+  "target_schema": "nolane-plan-runtime-snapshot-v7",
+  "drop_layers": ["lineage"],
+  "must_restore_empty": [],
+  "expected_dispositions": ["PRESERVED_EXACTLY", "RECOMPUTED_FROM_CANONICAL_INPUTS", "INVALIDATED_REQUIRES_RECHECK", "ARCHIVED_READ_ONLY"],
+  "unsupported_cases": ["opaque-v6-lineage-extension", "unknown-correctness-event"],
+  "fixture_digest": "42ba6240eedc642813d8522dfbe90a05881d0f604f838b6bf9ec17e3355938d1"
+}
