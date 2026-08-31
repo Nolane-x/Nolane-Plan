@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.0a1 — 2026-08-31
+
+- Added `CanonicalLineageRevision`, `SemanticRegimeRevision` and a kernel-owned immutable lineage registry with stable logical identity, globally owned exact revision IDs, causal writer sequence, parent/provenance/debt lineage and deterministic semantic-root hashing for declared strategic runtime families.
+- Added explicit schema, world-model, environment, canonicalization and semantic-profile regime revisions. Authority-bearing paths now bind exact current regime revisions rather than relying on implicit validity strings alone.
+- Completed DecisionEpoch and authority lineage sidecars across mission/canonical/action, proof, policy and schedulability surfaces. Exact lineage drift is checked before dispatch; representation-only compaction does not spuriously invalidate semantically equivalent authority.
+- Added typed semantic migration with the exact six disposition vocabulary, explicit identity mappings and debt declarations, conservative authorization invalidation/recheck, rollback/external-effect provenance and verified migration bridges for ambiguous in-flight external actions.
+- Added a frozen replay registry covering every correctness-significant `_record(...)` event emitted by the bounded runtime. Missing base reducers were closed, existing Wave 3–6 reducers are delegated, causal replay is sequence-driven and unknown correctness-significant events fail closed.
+- Added snapshot schema v7 with canonical lineage/regime/migration/compaction/replay-registry/authority state and conservative deterministic v6 import. Legacy authority becomes recheck-required when exact historical ancestry cannot be established; historical receipts/revisions remain immutable and queryable.
+- Added representation-only reversible compaction with read-only lineage archives and reconstruction manifests. Active authority lineage, dormant/resurrection refs, proof/evidence/debt refs and unique fallbacks are protected from destructive discard or revision-ID reuse.
+- Added the exact 32-case Wave-7 adversarial taxonomy: LG01–08, MG01–10, RP01–06 and GC01–08.
+- Added a 12-mutation Wave-7 constitutional gate covering revision rebinding, parent cycles, regime freshness, logical-only authority binding, migration silent-default/debt/ambiguous-action/authority-recheck bypasses, replay fail-closed/freshness bypasses and compaction lineage/authority-equivalence violations.
+- Python 3.11/3.12/3.13 CI now gates 408 unit/integration tests, compile, the original `108 -> 0` principal oracle, all Wave 2–7 conformance, Wave 3–7 mutation gates and the end-to-end demo. Task-8 exact-head evidence is Wave7 `32/32` and `12/12` on all matrix entries.
+- Wave 7 remains a bounded reference-runtime closure. Property/metamorphic/chaos/differential exhaustion, every historical schema-pair migration, arbitrary destructive production-storage compaction, distributed correctness, production hardening, formal global proof and empirical superiority remain outside this release claim.
+
 ## 0.6.0a1 — 2026-08-30
 
 - Added canonical `ControlPlaneResourceRevision`, `ReactionResourceDemand`, `ReactionJobContract` and reservation semantics so verifier/model/rate-limit/human/kernel-writer capacity can participate in policy reaction guarantees instead of being treated as free parallel infrastructure.
@@ -15,8 +29,8 @@
 - Added snapshot schema v6 with canonical Wave-6 codecs, immutable revision history plus current logical pointers, exact suffix replay, fail-closed unknown events and bounded v5 migration with empty Wave-6 state rather than invented certificates. Internal digest tampering and stale-resource restart resurrection are rejected.
 - Added the exact 43-case v0.6 failure-taxonomy oracle: CP01–12, HL01–12, EF01–08, TM01–05 and OI01–06.
 - Added a 12-mutation Wave-6 constitutional gate covering joint-guarantee promotion, coexistence optimism, resource freshness, protected capacity, stutter/deadline/debt progress, edge refresh, totality laundering, common-mode independence and replay/restart integrity.
-- Python 3.11/3.12/3.13 CI now gates 334 unit/integration tests, compile, the original `108 -> 0` principal oracle, Wave 2–6 conformance, Wave 3–6 mutation gates and the end-to-end demo. Wave-6 evidence is `43/43` conformance and `12/12` mutations killed on every matrix entry.
-- Wave 6 remains a bounded reference-runtime closure. Common immutable lineage, full migration/replay exhaustion, graph-compaction lineage, property/metamorphic/chaos/differential exhaustion, production hardening, formal global correctness and empirical superiority remain outside this release claim.
+- Python 3.11/3.12/3.13 CI gates 334 unit/integration tests, compile, the original `108 -> 0` principal oracle, Wave 2–6 conformance, Wave 3–6 mutation gates and the end-to-end demo. Wave-6 evidence is `43/43` conformance and `12/12` mutations killed on every matrix entry.
+- Wave 6 is a bounded reference-runtime closure. Common immutable lineage, full migration/replay exhaustion, graph-compaction lineage, property/metamorphic/chaos/differential exhaustion, production hardening, formal global correctness and empirical superiority were outside that release claim.
 
 ## 0.5.0a1 — 2026-08-30
 
@@ -30,8 +44,8 @@
 - Integrated sealed-policy authorization into the existing single-writer `PlanKernel`. `authorize_sealed_policy(...)` rechecks current principal/access/partition/action-space/selection/sufficiency/seal/executability bindings and delegates to the existing proof-carrying identity/authority path; policy objects never issue dispatch authority independently.
 - Added snapshot schema v5 with canonical policy codecs, internal digest verification and fail-closed `policy.*` suffix replay. Stale selections/seals and partial executability do not resurrect after restart; bounded v4→v5 migration starts with empty policy state rather than inventing one.
 - Added deterministic 29-case Wave-5 adversarial conformance and a 13-mutation constitutional gate covering non-anticipativity, hard vetoes, selection freshness, recursive recall, totality, global composition, reaction timing, information preservation, continuation horizon, kernel authority, replay digest integrity and seal revival.
-- Python 3.11/3.12/3.13 CI now gates 248 unit/integration tests, compile, the original 108→0 principal-scope oracle, Wave 2–5 adversarial suites, Wave 3–5 mutation gates and the end-to-end demo.
-- Wave 5 remains a bounded reference-runtime closure. Joint control-plane schedulability, repeated handoff liveness, activation-time edge stability and broader future/resource closure remain Wave-6 work rather than being claimed here.
+- Python 3.11/3.12/3.13 CI gates 248 unit/integration tests, compile, the original 108→0 principal-scope oracle, Wave 2–5 adversarial suites, Wave 3–5 mutation gates and the end-to-end demo.
+- Wave 5 remains a bounded reference-runtime closure. Joint control-plane schedulability, repeated handoff liveness, activation-time edge stability and broader future/resource closure remained Wave-6 work.
 
 ## 0.4.0a1 — 2026-08-30
 
@@ -47,12 +61,12 @@
 - Stale proof authority cannot resurrect across restart; post-snapshot semantic/query drift is replayed before authority is re-evaluated.
 - Added deterministic 14-case Wave 4 adversarial conformance covering capture, query freshness, dependency freshness, support algebra, blocking invalidity, kernel authority and replay.
 - Added a seven-mutation constitutional gate covering capture assurance, query revision freshness, independent grounding, blocking invalidity, semantic freshness, kernel manifest reuse and replay manifest integrity.
-- Python 3.11/3.12/3.13 CI now gates Wave 4 adversarial conformance and the Wave 4 mutation gate in addition to all prior Wave 1-3 release gates.
+- Python 3.11/3.12/3.13 CI gates Wave 4 adversarial conformance and the Wave 4 mutation gate in addition to all prior Wave 1-3 release gates.
 
 ## 0.3.0a1 — 2026-08-30
 
 - Added canonical host/platform `PrincipalAttestation` and durable `PrincipalBindingRevision` identity provenance.
-- Principal identity now fails closed on source-subject collision, weak assurance, expiry, revocation and historical pre-binding use.
+- Principal identity fails closed on source-subject collision, weak assurance, expiry, revocation and historical pre-binding use.
 - Added planning-relevant `CommunicationLedger` with `SENT -> DELIVERED -> OBSERVED` semantics; delivery alone never implies recipient knowledge and observation is recipient/time bound.
 - Added `DispatchAttestation` binding authorization, transaction, action, adapter revision and exact canonical principal identity before side effects.
 - Added transaction-bound `ReconciliationEvidence`; strong reconciliation no longer relies on caller-supplied trust booleans.
@@ -61,7 +75,7 @@
 - Added fail-closed Wave 3 suffix replay for identity and communication trust events with provenance-digest validation and non-retroactive knowledge reconstruction.
 - Added deterministic 12-case Wave 3 adversarial conformance.
 - Added a four-mutation constitutional gate covering identity non-retroactivity, OBSERVED-only knowledge, authorization/binding continuity and execution-evidence snapshot durability.
-- Python 3.11/3.12/3.13 CI now gates unit tests, compile, principal-scope oracle, Wave 2 conformance, Wave 3 conformance, Wave 3 mutation gate and end-to-end demo.
+- Python 3.11/3.12/3.13 CI gates unit tests, compile, principal-scope oracle, Wave 2 conformance, Wave 3 conformance, Wave 3 mutation gate and end-to-end demo.
 
 ## 0.2.0a1 — 2026-08-29
 

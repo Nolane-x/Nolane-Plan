@@ -2,6 +2,8 @@
 
 This ledger tracks the strongest normative runtime contracts in `NOLANE-PLAN-RUNTIME-ARCHITECTURE-V0.15-PRINCIPAL-SCOPED-MULTI-AGENT-CLOSURE-SPEC.md` against the reference implementation. It deliberately separates **implemented semantics**, **partial reference semantics**, **planned closure**, and **research/non-goal claims**.
 
+Release candidate line: `0.7.0a1` (Wave 7). `GREEN` below always means the tested bounded scope stated by the row, not global formal correctness.
+
 Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GREEN/PARTIAL` = a strong bounded primitive exists but a wider spec surface remains open; `PARTIAL` = primitive exists but the complete contract is not yet closed; `MISSING` = not implemented; `BOUNDARY` = explicitly outside the v0.15 reference-runtime goal.
 
 | Spec surface | Current state | Closure wave |
@@ -9,7 +11,7 @@ Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GR
 | Mission revision / anti-goals / hard constraints | GREEN | existing |
 | Canonical state outranks plan narrative | GREEN | existing |
 | `NULL_WORLD` / residual unknown-world representation | GREEN | existing |
-| Future families, bounded factorized compiler | GREEN — declared runtime families now also carry immutable Wave-7 lineage | existing/W7 |
+| Future families, bounded factorized compiler | GREEN — declared runtime families carry immutable Wave-7 lineage | existing/W7 |
 | Decision-relevant convergence guards | GREEN/PARTIAL | existing/W7 |
 | Condition-centric Strategic Obligations | GREEN | existing |
 | Evidence polarity, revocation, common-lineage independence | GREEN | existing |
@@ -32,7 +34,7 @@ Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GR
 | SupportAlternativeSet / conjunctive clauses / grounded support | GREEN | W4 |
 | Blocking-invalidity vs positive-support distinction | GREEN | W4 |
 | Semantic closure barrier (source mutation + generation advance) | GREEN | W4 |
-| Replay-derived proof support/freshness reconstruction | GREEN for every declared Wave-4/Wave-7 runtime replay path; broader architecture remains bounded | W4/W7 |
+| Replay-derived proof support/freshness reconstruction | GREEN for declared runtime paths | W4/W7 |
 | `DecisionEpoch` principal/access/partition/action-space/temporal binding | GREEN | W5 |
 | Direct `DecisionEpoch` binding to mission/canonical/location/information/semantic-regime lineage | GREEN for declared runtime sidecar | W7 |
 | Reveal events / principal-relative observation frontier | GREEN | W5 |
@@ -101,10 +103,6 @@ Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GR
 | Proof-bearing snapshot/replay semantics | GREEN | W4 |
 | Policy-bearing snapshot/replay semantics | GREEN | W5 |
 | Wave-6 resource/schedulability/liveness/stability snapshot/replay semantics | GREEN | W6 |
-| Wave-6 internal canonical-digest verification | GREEN | W6 |
-| Historical Wave-6 revisions separated from current logical pointers | GREEN | W6 |
-| Bounded v5→v6 migration with empty Wave-6 state | GREEN | W6 |
-| Stale Wave-6 resource state cannot resurrect old certificate on restart | GREEN | W6 |
 | Snapshot v7 persists lineage/regimes/migration/compaction/replay registry and authority closure | GREEN | W7 |
 | Conservative deterministic v6→v7 import without invented strong ancestry | GREEN | W7 |
 | Replay coverage for every correctness-significant event emitted by the bounded runtime | GREEN | W7 |
@@ -115,10 +113,10 @@ Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GR
 | Migration cannot silently preserve authority or reinterpret ambiguous external effects | GREEN for declared runtime migration path | W7 |
 | Reversible representation-only graph compaction with read-only archive/reconstruction | GREEN for bounded reference runtime | W7 |
 | Compaction retains active authority, dormant/resurrection, proof/evidence/debt and unique-fallback lineage | GREEN | W7 |
-| Production physical history deletion/general storage-engine compaction | BOUNDARY/PARTIAL — reference runtime intentionally archives instead of proving arbitrary destructive storage rewrites | W8/non-goal review |
+| Production physical history deletion/general storage-engine compaction | BOUNDARY/PARTIAL | W8/non-goal review |
 | PG01-PG40 registry | GREEN | existing |
 | I-65..I-72 v0.6 schedulability/liveness invariants | GREEN for bounded reference-runtime scope | W6 |
-| I-245..I-260 principal-scoped closure | GREEN for declared principal/authority lineage paths / PARTIAL wider architectural exhaustion | W3-W8 |
+| I-245..I-260 principal-scoped closure | GREEN for declared principal/authority paths / PARTIAL wider exhaustion | W3-W8 |
 | v0.14 projection collision oracle `108 -> 0` | GREEN | existing |
 | Wave-2 adversarial conformance | GREEN — 10/10 | W2 |
 | Wave-3 adversarial conformance + constitutional mutations | GREEN — 12/12 + 4/4 | W3 |
@@ -126,7 +124,7 @@ Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GR
 | Wave-5 adversarial conformance + constitutional mutations | GREEN — 29/29 + 13/13 | W5 |
 | Wave-6 exact failure-taxonomy conformance + constitutional mutations | GREEN — 43/43 + 12/12 | W6 |
 | Wave-7 durable-lineage/migration/replay/compaction conformance + constitutional mutations | GREEN — 32/32 + 12/12 | W7 |
-| Python 3.11/3.12/3.13 Wave-7 pre-release matrix | GREEN — 408 tests + compile/oracle/Wave2–7 gates/demo at Task-8 exact head | W7 |
+| Python 3.11/3.12/3.13 Wave-7 implementation matrix | GREEN — 408 tests + compile/oracle/Wave2–7 gates/demo at Task-8 exact head | W7 |
 | Property/metamorphic/chaos/differential conformance | PARTIAL | W8 |
 | Real benchmark worlds / empirical superiority | RESEARCH | W8 measurement only |
 | Distributed correctness writers / consensus | BOUNDARY | not v0.15 |
@@ -136,43 +134,32 @@ Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GR
 
 ## Exhaustion order
 
-1. **Wave 3 — External Trust Anchor Closure — GREEN for reference-runtime scope**: canonical principal attestations, communication receipts, dispatch attestation, reconciliation evidence, trust snapshot/replay/freshness integration.
-2. **Wave 4 — Proof Dependency & Support Closure — GREEN for reference-runtime scope**: proof input envelopes, capture assurance, query membership/result-sensitivity revisions, proof dependency manifests, bounded-DNF support alternatives, blocking-invalidity separation, semantic closure barrier, proof-carrying kernel authority, proof snapshot/replay and adversarial/mutation gates.
-3. **Wave 5 — Executable Policy Closure — GREEN for bounded reference-runtime scope**: principal-relative decision information, contingent policy IR, frozen advisory selection, decision sufficiency, PlanSeal, recursive recall, totality, edge stitching, reaction/readiness, information capability, continuation, exact-scope executability, sealed-policy kernel authority, snapshot-v5 replay and adversarial/mutation gates.
-4. **Wave 6 — Schedulability/Liveness & Future-Temporal-Resource Closure — GREEN and released for bounded reference-runtime scope**: joint control-plane schedulability, protected reaction capacity, repeated handoff liveness, activation-time edge stability, modeled-totality/adequacy separation, option independence, dormant-branch resurrection, kernel authority integration, snapshot-v6 replay/migration, 43-case taxonomy oracle and 12-mutation constitutional gate.
-5. **Wave 7 — Durable Lineage & Migration Closure — implementation GREEN, release integration in progress**: common immutable lineage, typed semantic regimes, explicit authority lineage, frozen replay registry/base reducers, snapshot-v7/conservative-v6 import, six-disposition migration, reversible compaction, 32-case adversarial taxonomy and 12 constitutional mutants.
-6. **Wave 8 — Conformance Exhaustion — NEXT after Wave-7 release/main verification**: property/metamorphic/chaos/differential tests, broader constitutional mutation coverage, benchmark worlds and final source-spec coverage reconciliation.
+1. **Wave 3 — External Trust Anchor Closure — GREEN for reference-runtime scope**.
+2. **Wave 4 — Proof Dependency & Support Closure — GREEN for reference-runtime scope**.
+3. **Wave 5 — Executable Policy Closure — GREEN for bounded reference-runtime scope**.
+4. **Wave 6 — Schedulability/Liveness & Future-Temporal-Resource Closure — GREEN and released for bounded reference-runtime scope**.
+5. **Wave 7 — Durable Lineage & Migration Closure — implementation GREEN; `0.7.0a1` release verification in progress**: common immutable lineage, typed semantic regimes, exact authority lineage, frozen replay registry/base reducers, snapshot-v7/conservative-v6 import, six-disposition migration, reversible compaction, 32-case adversarial taxonomy and 12 constitutional mutants.
+6. **Wave 8 — Conformance Exhaustion — NEXT after Wave-7 final-main verification**: property/metamorphic/chaos/differential tests, broader constitutional mutation coverage, bounded reference worlds/benchmarks and final source-spec coverage reconciliation.
 
 ## Wave 7 verification surface
 
 Wave 7 is GREEN only for the bounded durable-lineage/migration/replay/compaction scope exercised by repository gates:
 
-- canonical sidecars give declared runtime strategic objects stable logical identity, immutable revision identity, causal writer sequence, parent/provenance/debt lineage and deterministic semantic digests;
-- schema, world-model, environment, canonicalization and semantic-profile regimes are explicit immutable revisions and authority binds their exact current revisions;
-- DecisionEpoch sidecars and proof/policy/schedulability/action authority closure bind exact lineage revisions rather than logical IDs alone;
-- semantic-regime or bound artifact drift blocks old authority before dispatch, while representation-only compaction does not spuriously invalidate an equivalent authorization;
-- migration uses the exact six dispositions, forbids silent defaults/debt loss/implicit identity remapping, conservatively invalidates authority and rejects ambiguous external-action migration without verified bridge evidence;
-- snapshot v7 persists and verifies lineage, regimes, migration, compaction, replay-registry and authority-closure state; v6 import is deterministic and marks authority recheck-required when exact ancestry is unavailable;
-- the replay registry covers every `_record(...)` event emitted by the bounded runtime, delegates existing Wave 3–6 reducers, reconstructs missing base events, uses journal sequence rather than wall time and fails closed on unknown correctness-significant events;
-- representation-only compaction retains or archives all canonical lineage needed by active authority, dormant resurrection, proof/evidence/debt and unique fallback semantics, and reconstruction reproduces the certified source semantic root;
+- declared strategic runtime objects use canonical sidecars with stable logical identity, immutable revision identity, causal sequence and parent/provenance/debt lineage;
+- schema, world-model, environment, canonicalization and semantic-profile regimes are explicit immutable revisions;
+- DecisionEpoch and proof/policy/schedulability/action authority bind exact lineage revisions and current semantic regimes;
+- semantic drift blocks old authority before dispatch while representation-only compaction preserves an otherwise-current authorization result;
+- migration uses exactly six dispositions, forbids silent defaults/debt loss/implicit identity remapping, invalidates authority conservatively and rejects ambiguous external-action migration without verified bridge evidence;
+- snapshot v7 persists/verifies lineage, regimes, migration, compaction, replay registry and authority closure; v6 import is deterministic and conservative;
+- the replay registry covers every correctness-significant event emitted by the bounded runtime, is sequence-driven and fails closed on unknown correctness-significant events;
+- representation-only compaction retains or archives every protected lineage class exercised by the reference runtime and reconstructs the certified semantic root;
 - the frozen Wave-7 taxonomy passes `32/32`, and twelve deliberate constitutional mutants are killed target-specifically;
 - Task-8 exact head `5f58455d3161ed08cefcde7407e086279c8582ff` passed 408 unit/integration tests, compile, the `108 -> 0` oracle, Wave 2–7 conformance/mutation gates and the end-to-end demo on Python 3.11, 3.12 and 3.13 in CI run `33343969251`.
 
 ## Remaining normative engineering surface
 
-Wave 7 intentionally does **not** promote the following to global/full-architecture GREEN:
-
-- generalized global minimality/exclusion beyond the currently declared bounded closure;
-- generalized proof-context composition outside implemented bounded theories;
-- every hypothetical or historical schema-to-schema migration pair;
-- arbitrary destructive physical compaction across production storage engines;
-- distributed/multi-writer consensus semantics;
-- property/metamorphic/chaos/differential exhaustion;
-- benchmark-world or empirical planning-superiority claims;
-- final source-spec coverage reconciliation across all remaining PARTIAL rows.
-
-Those remaining surfaces belong to Wave 8, explicit research measurement, or the stated product boundaries.
+Wave 7 intentionally does **not** promote generalized global minimality/exclusion, generalized proof-context theories, every historical schema migration pair, arbitrary destructive physical storage compaction, distributed/multi-writer consensus, property/metamorphic/chaos/differential exhaustion, benchmark-world superiority or final full-source coverage reconciliation to GREEN. Those surfaces belong to Wave 8, research measurement or explicit product boundaries.
 
 ## Claim boundary
 
-`GREEN` means a tested reference implementation for the stated bounded scope. It does not mean formal proof, production hardening, distributed multi-writer safety or empirical superiority. Before the Wave-7 release commit, PR synthetic-merge and final `main` evidence are complete, the strongest valid Wave-7 statement is: **implementation GREEN for the bounded durable-lineage/migration/replay/compaction reference-runtime scope; release integration still pending**.
+`GREEN` means a tested reference implementation for the stated bounded scope. It does not mean formal proof, production hardening, distributed multi-writer safety or empirical superiority. The strongest release claim remains conditional until the exact `0.7.0a1` release head, PR synthetic merge and final `main` all reproduce the required CI surface.

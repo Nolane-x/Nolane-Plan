@@ -44,4 +44,4 @@ install_authority_lineage_patch(PlanKernel)
 install_authority_lineage_replay_fix(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
-__version__ = "0.6.0a1"
+__version__ = "0.7.0a1"

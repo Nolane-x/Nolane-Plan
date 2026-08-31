@@ -1,10 +1,10 @@
 # Nolane Plan Conformance
 
-This document records the executable bounded conformance surface for the Wave-7 `0.7.0a1` release candidate. It is an evidence ledger, not a claim of global formal correctness or empirical superiority.
+This document records the executable bounded conformance surface for the `0.7.0a1` Wave-7 release candidate. It is an evidence ledger, not a claim of global formal correctness or empirical superiority.
 
 ## Release gate
 
-A Wave-7 release candidate is acceptable only when the same exact commit passes all of the following on Python 3.11, 3.12 and 3.13:
+The `0.7.0a1` release candidate is acceptable only when the same exact commit passes all of the following on Python 3.11, 3.12 and 3.13:
 
 | Gate | Required result |
 |---|---:|
@@ -24,7 +24,7 @@ A Wave-7 release candidate is acceptable only when the same exact commit passes 
 | Wave 7 constitutional mutations | 12/12 killed |
 | End-to-end demo | pass with valid journal |
 
-Task-8 exact head `5f58455d3161ed08cefcde7407e086279c8582ff` already satisfies this executable surface on all three Python versions in CI run `33343969251`. Release-head, PR synthetic-merge and final-main evidence must still be produced after the release/documentation commits.
+Task-8 exact head `5f58455d3161ed08cefcde7407e086279c8582ff` satisfies this executable surface on all three Python versions in CI run `33343969251`. The release candidate must reproduce the same surface at its own exact SHA, then again on the PR synthetic merge and final `main`.
 
 ## Wave 7 taxonomy
 
@@ -68,86 +68,32 @@ python scripts/wave7_mutation_gate.py
 
 Required summary: `WAVE7_MUTATIONS_CAUGHT=12/12`.
 
-The mutation gate fails if a target no longer matches the expected production seam. Conceptually multi-layer invariants such as parent-cycle prevention may require multiple physical edits inside one mutant so redundant guards do not create a false mutation-survival result.
+The gate also fails if a target no longer matches the expected production seam. Conceptually multi-layer invariants such as parent-cycle prevention may require multiple physical edits inside one mutant so redundant guards do not create a false mutation-survival result.
 
 ## Durable lineage and semantic-regime conformance
 
-The bounded Wave-7 lineage contract requires:
+The bounded Wave-7 lineage contract requires stable conceptual identity and immutable exact revision identity; deterministic semantic/lineage digests; pre-existing parents except explicit conservative legacy roots; acyclic append-only ancestry; writer/journal sequence rather than wall-clock causal order; explicit schema/world/environment/canonicalization/profile regimes; and exact DecisionEpoch/authorization lineage bindings.
 
-- stable `(object_family, logical_id)` conceptual identity and immutable globally owned revision IDs;
-- deterministic semantic and lineage digests over correctness-significant content;
-- parent revisions to pre-exist except explicit conservative legacy roots, with acyclic append-only ancestry;
-- causal order from serialized writer/journal sequence rather than wall-clock time;
-- exact current schema/world/environment/canonicalization/semantic-profile regime revisions;
-- exact lineage sidecars for declared mission/canonical/future/obligation/evidence/action/grant/adapter/region and derived proof/policy/schedulability authority surfaces;
-- exact DecisionEpoch and ActionAuthorization lineage binding, with semantic drift rejected before dispatch.
-
-The lineage layer remains authority-neutral: it records and validates identity/ancestry but does not mint independent action authority.
+The lineage layer remains authority-neutral: it records and validates identity and ancestry but does not mint independent action authority.
 
 ## Migration and persistence conformance
 
 Snapshot schema `nolane-plan-runtime-snapshot-v7` persists lineage history/current pointers, semantic regimes, migration manifests/history/bridges/recheck state, compaction manifests/archives/results, replay-registry identity and authority-lineage closure.
 
-The bounded recovery/migration contract requires:
-
-- internal canonical-digest verification for restored lineage, regimes and manifests;
-- deterministic conservative v6→v7 import without invented strong historical parentage;
-- imported legacy authority marked recheck-required when exact lineage cannot be established;
-- historical receipts/revisions remain immutable and queryable;
-- the exact six migration dispositions: `PRESERVED_EXACTLY`, `RECOMPUTED_FROM_CANONICAL_INPUTS`, `INVALIDATED_REQUIRES_RECHECK`, `ESCALATED_TO_DEBT`, `ARCHIVED_READ_ONLY`, `UNSUPPORTED_FAIL_CLOSED`;
-- no silent changed-field default, identity remap, debt loss or authority promotion;
-- ambiguous/in-flight external action migration fails closed without verified bridge evidence;
-- storage rollback metadata never pretends to erase external effect history.
+The bounded recovery/migration contract requires internal digest verification; deterministic conservative v6→v7 import without invented strong ancestry; legacy authority recheck when exact lineage is unavailable; immutable historical receipts/revisions; exactly six migration dispositions; no silent changed-field default, identity remap, debt loss or authority promotion; verified bridge evidence for ambiguous external-action migration; and rollback metadata that retains external effect history.
 
 ## Replay conformance
 
 The frozen replay registry classifies every correctness-significant event emitted by the bounded runtime as a state reducer, derived recomputation, audit-only event or snapshot boundary. Existing Wave 3–6 reducers are delegated rather than duplicated.
 
-The replay contract requires:
-
-- same supported snapshot prefix + journal suffix => same bounded canonical semantic digest;
-- sequence-driven replay independent of wall-clock ordering;
-- exact replay of declared base, trust, proof, policy, schedulability, migration and compaction events;
-- stale caches/currentness views never outrank replayed canonical inputs;
-- unknown correctness-significant events fail closed.
+The replay contract requires same supported snapshot prefix + journal suffix to produce the same bounded canonical semantic digest; sequence-driven replay independent of wall-clock ordering; exact replay of declared base/trust/proof/policy/schedulability/migration/compaction events; and fail-closed unknown correctness-significant events.
 
 ## Reversible compaction conformance
 
-The reference runtime supports representation-only compaction through a read-only archive and reconstructability manifest. It intentionally prefers retention/archive over speculative destructive deletion.
-
-The compaction contract requires:
-
-- mission and semantic-regime roots remain unchanged;
-- active authority lineage, dormant/resurrection refs, proof/evidence/debt refs and unique fallbacks cannot be destructively discarded;
-- archived revision IDs cannot be rebound or reused;
-- parent DAG/provenance remains reconstructable;
-- reconstruction reproduces the certified source semantic root and canonical semantic digest;
-- compaction cannot create or strengthen authorization, and representation-only rewriting preserves an otherwise-current authorization result.
-
-## Current verification evidence
-
-Task-8 exact head `5f58455d3161ed08cefcde7407e086279c8582ff`, CI run `33343969251`:
-
-- Python 3.11: GREEN all gates;
-- Python 3.12: GREEN all gates; inspected full log confirms 408 tests, Wave7 32/32, Wave7 mutations 12/12 and demo success;
-- Python 3.13: GREEN all gates;
-- principal-scope oracle remains `108 -> 0`;
-- all earlier Wave 2–6 conformance and mutation gates remain GREEN.
-
-This is pre-release implementation evidence. The release commit must reproduce the same gate surface at its own exact SHA, followed by PR synthetic-merge and final-main CI.
+The reference runtime supports representation-only compaction through a read-only archive and reconstructability manifest. Mission/regime roots remain unchanged; active authority lineage, dormant/resurrection refs, proof/evidence/debt refs and unique fallbacks cannot be destructively discarded; archived revision IDs cannot be rebound; reconstruction must reproduce the certified semantic root/canonical digest; and compaction cannot create or strengthen authorization.
 
 ## Claim boundary
 
-The `0.7.0a1` line may be described as **GREEN for the bounded Wave-7 durable-lineage/migration/replay/compaction reference-runtime scope** only after exact release-head, PR synthetic-merge and final `main` evidence pass.
+`0.7.0a1` may be described as **GREEN for the bounded Wave-7 durable-lineage/migration/replay/compaction reference-runtime scope** only after exact release-head, PR synthetic-merge and final `main` evidence pass.
 
-The repository still does not claim:
-
-- every historical schema-to-schema migration pair;
-- arbitrary destructive storage compaction across production storage engines;
-- generalized global minimality/exclusion outside the implemented bounded theories;
-- distributed correctness writers or consensus;
-- a generic scheduler/orchestrator/identity provider/messaging platform;
-- property/metamorphic/chaos/differential exhaustion;
-- production hardening, formal global proof or empirical superiority.
-
-Those unresolved normative engineering surfaces remain Wave 8 work, research measurement, or explicit non-goal boundaries.
+The repository still does not claim every historical schema-to-schema migration pair, arbitrary destructive storage compaction across production storage engines, generalized global minimality/exclusion outside implemented bounded theories, distributed correctness writers or consensus, property/metamorphic/chaos/differential exhaustion, production hardening, formal global proof or empirical superiority. Those unresolved surfaces remain Wave 8 work, research measurement, or explicit non-goal boundaries.
