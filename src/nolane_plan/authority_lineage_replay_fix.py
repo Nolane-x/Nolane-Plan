@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def install_authority_lineage_replay_fix(kernel_cls) -> None:
-    """Use revision-index registries while rebuilding Wave-7 sidecars on replay."""
+    """Use exact revision registries and closure fields while rebuilding Wave-7 authority on replay."""
     if getattr(kernel_cls, "_wave7_authority_lineage_replay_fix_installed", False):
         return
 
@@ -38,4 +38,16 @@ def install_authority_lineage_replay_fix(kernel_cls) -> None:
 
     ar._event_sidecar_replay = replay
     kernel_cls._replay_authority_lineage_event = replay
+
+    previous_apply = ar._apply_closure_to_layer_bindings
+
+    def apply_closure_to_layer_bindings(self, authorization_id: str, closure: dict[str, str]) -> None:
+        previous_apply(self, authorization_id, closure)
+        proof_binding = getattr(self, "proof_authorization_bindings", {}).get(authorization_id)
+        if isinstance(proof_binding, dict):
+            proof_source_digest = closure.get("proof_source_lineage_digest")
+            if proof_source_digest:
+                proof_binding["proof_source_lineage_digest"] = proof_source_digest
+
+    ar._apply_closure_to_layer_bindings = apply_closure_to_layer_bindings
     kernel_cls._wave7_authority_lineage_replay_fix_installed = True
