@@ -5,13 +5,25 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nolane-plan"
 version = "0.9.0a1"
-description = "Proof-carrying strategic future-space runtime for AI agents"
+description = "Proof-carrying strategic future-space runtime for auditable AI-agent planning, replay, and execution authority"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [{name = "Nolane-x"}]
 dependencies = []
-keywords = ["ai-agents", "planning", "multi-agent", "verification", "runtime", "future-space"]
+keywords = [
+  "ai-agents",
+  "agent-runtime",
+  "planning",
+  "strategic-planning",
+  "decision-making",
+  "multi-agent",
+  "verification",
+  "correctness",
+  "reproducibility",
+  "auditability",
+  "future-space",
+]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",

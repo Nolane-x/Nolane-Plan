@@ -1,0 +1,43 @@
+name: Publish v0.9.0a1 release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-v0.9.0a1.yml"
+      - "docs/releases/v0.9.0a1.md"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish exact runtime release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out presentation commit
+        uses: actions/checkout@v4
+
+      - name: Create v0.9.0a1 release if absent
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v0.9.0a1
+          RELEASE_TARGET: d11abb4468c701622d0e78722f1a0e54c94aa920
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "$RELEASE_TAG already exists; leaving the existing release unchanged."
+            exit 0
+          fi
+
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$RELEASE_TARGET" \
+            --title "Nolane Plan v0.9.0a1 — Production Correctness / Distributed Authority" \
+            --notes-file docs/releases/v0.9.0a1.md \
+            --prerelease
+
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isPrerelease,url

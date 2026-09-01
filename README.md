@@ -1,106 +1,154 @@
+<div align="center">
+
 # Nolane Plan
 
-**Strategic Future-Space Runtime for AI Agents — v0.15 reference implementation line**
+### Compile strategic futures. Carry proofs. Fail closed.
 
-Nolane Plan treats planning as compilation of a bounded strategic future space rather than a longer checklist or a plan→execute→replan wrapper. Canonical state, evidence, uncertainty, principal-relative information, proof dependencies, contingent policy, temporal/resource constraints, semantic lineage and execution authority remain outside model narration and are made executable, replayable and auditable.
+**A model-free, standard-library-first strategic future-space runtime for auditable AI-agent planning, replay, and execution authority.**
 
-This repository is a **model-free, standard-library-first reference runtime** derived from the Nolane Plan v0.15 architecture specification.
+[English](README.md) · [Tiếng Việt](README-VN.md) · [简体中文](README-CN.md)
 
-## Runtime line
+[![CI](https://github.com/Nolane-x/Nolane-Plan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Nolane-x/Nolane-Plan/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/release-v0.9.0a1-blue)](https://github.com/Nolane-x/Nolane-Plan/releases/tag/v0.9.0a1)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Dependencies](https://img.shields.io/badge/runtime%20dependencies-0-success)](pyproject.toml)
+[![Model](https://img.shields.io/badge/model-free-runtime-purple)](#what-nolane-plan-is)
 
-`0.9.0a1` is the Wave-9 **Production Correctness / Distributed Authority** release line.
+</div>
 
-Wave 9 keeps the established planning, proof, policy, replay, migration and Wave-8 falsification stack and closes three explicitly bounded production surfaces rather than adding a new planner:
+---
 
-- production-store destructive compaction with prepare, shadow verification, durable pointer switch and conservative retirement;
-- adapter-bound external execution semantics with exact dispatch, cancellation, fencing, reconciliation and compensation contracts;
-- strong multi-writer authority only on storage profiles that actually provide the required durable acknowledgement, exact-revision CAS and fencing semantics.
+## Planning is not a checklist
 
-Restart/replay preserves the new correctness-significant sidecars, stale authority fails closed, and weaker storage or execution backends are not promoted into stronger guarantees. Historical Wave 2–8 gates remain mandatory.
+Most agent planners produce a sequence, execute it, observe what happened, and replan. Nolane Plan starts from a different premise:
 
-Frozen Wave-9 registry digest: `15e4876c1fabe75bbfe78c5f3a921299315863277bc791ac5324bf6115204ea8`.
+> **A serious plan is a bounded strategic future space with explicit state, evidence, uncertainty, authority, proof dependencies, contingencies, resource constraints, and replayable decisions.**
+
+Instead of asking a model to remember all correctness-significant facts inside narration, Nolane Plan moves those facts into an executable runtime.
+
+| Conventional agent planning | Nolane Plan |
+|---|---|
+| Plan → execute → replan | Compile and maintain a bounded future space |
+| Model narration carries state | Canonical runtime state outranks narration |
+| Hidden assumptions | Explicit evidence, uncertainty and blockers |
+| One happy-path sequence | Sealed contingent policies and branch conditions |
+| Retry after failure | Durable dispatch, reconciliation and compensation semantics |
+| “Looks correct” | Deterministic conformance, mutation and coverage gates |
+| Authority implied by control flow | Proof-carrying, lineage-bound execution authority |
+
+## What Nolane Plan is
+
+Nolane Plan is a **reference runtime for strategic planning correctness**. It is intentionally model-free: speculative/model workers can propose candidates, but correctness-significant state remains outside the model and is evaluated by the runtime.
+
+The current architecture specification line is **v0.15**. The current implementation release is **`0.9.0a1`**, closing Wave 9: **Production Correctness / Distributed Authority**.
+
+At a glance, the runtime provides:
+
+- canonical state and principal-relative information;
+- evidence, trust, uncertainty, blocker and proof dependency tracking;
+- Decision Epochs and non-anticipative contingent policy selection;
+- temporal, resource, schedulability and liveness checks;
+- semantic lineage, replay, migration and bounded compaction;
+- proof-carrying authorization and durable dispatch fencing;
+- adapter-bound external execution, cancellation, reconciliation and compensation semantics;
+- capability-qualified Authority Epochs for bounded strong multi-writer operation;
+- deterministic conformance, chaos, differential, mutation and coverage gates.
 
 ## Core architecture
 
 ```text
-                   speculative/model workers
-                 /          |            \
-         principal A    principal B    verifier
-                 \          |            /
-                  +----------------------+
-                             |
-                    serialized PlanKernel
-                             |
-       canonical / evidence / trust / proof / policy
-                             |
-             principal-scoped DecisionEpoch
-                             |
-            sealed contingent policy + selection
-                             |
-      sufficiency + schedulability + liveness + lineage
-                             |
-              proof-carrying authorization
-                             |
-                 durable dispatch fence
-                             |
-                    external effect
-                             |
-          verify / reconcile / cancellation fence
-                             |
-                   canonical commit
-                             |
-       journal + snapshot-v7 + fail-closed replay
-                             |
-       migration + reversible lineage compaction
-                             |
-        Wave-8 layered falsification / coverage
+                     speculative / model workers
+                 ┌──────────┬──────────┬──────────┐
+                 │          │          │          │
+           principal A  principal B  verifier  ...
+                 │          │          │
+                 └──────────┴──────────┴──────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │    PlanKernel     │
+                    │ serialized truth │
+                    └─────────┬─────────┘
+                              │
+      canonical state · evidence · trust · proof · policy
+                              │
+                principal-scoped Decision Epoch
+                              │
+              sealed contingent policy selection
+                              │
+        sufficiency · resources · deadlines · liveness
+                              │
+                 proof-carrying authorization
+                              │
+                    durable dispatch fence
+                              │
+                        external effect
+                              │
+          verify · reconcile · cancel · compensate
+                              │
+                       canonical commit
+                              │
+          journal · snapshot-v7 · fail-closed replay
+                              │
+             migration · lineage · safe compaction
+                              │
+            layered falsification and coverage
 ```
 
-## Constitutional properties
+## `v0.9.0a1` — Production Correctness / Distributed Authority
 
-The bounded reference runtime enforces, among others:
+Wave 9 does **not** add another planner. It hardens the already-established planning/proof/policy/replay stack across three bounded production surfaces.
 
-- canonical state outranks model narrative;
-- host/platform identity cannot be self-asserted by a model;
-- kernel-global visibility does not imply principal-available knowledge;
-- historical Decision Cuts do not see future artifacts retroactively;
-- proof authority binds captured dependencies, query-domain freshness and support/blocker semantics;
-- hard selection vetoes cannot be scored back into eligibility;
-- non-anticipative policy cannot branch on information unavailable to the acting principal;
-- joint resource feasibility is not inferred from per-job feasibility;
-- repeated handoff cannot indefinitely rename or defer required continuation work;
-- semantic-regime or exact-lineage drift invalidates stale authority before dispatch;
-- migration mappings cannot mint or resurrect authorization;
-- unknown correctness-significant replay events fail closed;
-- representation-only compaction cannot erase protected lineage or strengthen authority;
-- cancellation after durable dispatch is not reported as a clean cancellation without reconciliation evidence;
-- ambiguous relocation remains ambiguous, and opaque/global theories remain UNKNOWN rather than optimistically composable.
+| Surface | What the release closes |
+|---|---|
+| **Production store** | Storage capability profiles, exact-revision commit/CAS semantics and Authority Epochs |
+| **Destructive compaction** | Prepare → shadow verification → durable switch → conservative retirement |
+| **External execution** | Exact adapter capability/revision binding, dispatch, cancellation, reconciliation and compensation |
+| **Multi-writer authority** | Strong multi-writer operation only where durable ACK + exact-revision CAS + fencing are actually available |
+| **Restart / replay** | Correctness-significant Wave-9 sidecars survive supported restart and replay paths |
+| **Falsification** | Deterministic chaos, differential equivalence, constitutional mutation and coverage evidence |
+
+### Constitutional properties
+
+The bounded runtime enforces, among others:
+
+- **Canonical state outranks model narrative.**
+- **A model cannot self-assert host/platform identity or execution authority.**
+- Kernel-global visibility does not imply principal-available knowledge.
+- Historical Decision Cuts do not acquire future information retroactively.
+- Proof authority binds captured dependencies, freshness and support/blocker semantics.
+- Hard vetoes cannot be scored back into eligibility.
+- Non-anticipative policy cannot branch on information unavailable to the acting principal.
+- Joint resource feasibility is not inferred from per-job feasibility.
+- Semantic-regime or exact-lineage drift invalidates stale authority before dispatch.
+- Migration mappings cannot mint or resurrect authorization.
+- Unknown correctness-significant replay events fail closed.
+- Representation-only compaction cannot erase protected lineage or strengthen authority.
+- Cancellation after durable dispatch cannot be reported as clean cancellation without reconciliation evidence.
+- Ambiguous relocation remains ambiguous; opaque/global theories remain `UNKNOWN` rather than optimistically composable.
 
 ## Quick start
 
 ```bash
+git clone https://github.com/Nolane-x/Nolane-Plan.git
+cd Nolane-Plan
 python -m pip install -e .
+python -m nolane_plan demo --root .demo-plan
+```
+
+Run the full unit/integration suite:
+
+```bash
 python -m unittest discover -s tests -v
-python -m nolane_plan conformance
-python -m nolane_plan.wave2_conformance
-python -m nolane_plan.wave3_conformance
-python scripts/wave3_mutation_gate.py
-python -m nolane_plan.wave4_conformance
-python scripts/wave4_mutation_gate.py
-python -m nolane_plan.wave5_conformance
-python scripts/wave5_mutation_gate.py
-python -m nolane_plan.wave6_conformance
-python scripts/wave6_mutation_gate.py
-python -m nolane_plan.wave7_conformance
-python scripts/wave7_mutation_gate.py
-python -m nolane_plan.wave8_conformance
-python scripts/wave8_mutation_gate.py
-python -m nolane_plan.wave8_coverage
+```
+
+Run the current Wave-9 evidence gates:
+
+```bash
 python -m nolane_plan.wave9_chaos
 python -m nolane_plan.wave9_differential
 python scripts/wave9_mutation_gate.py
 python -m nolane_plan.wave9_coverage
-python -m nolane_plan demo --root .demo-plan
 ```
 
 Resume a saved runtime:
@@ -111,12 +159,21 @@ from nolane_plan import PlanKernel
 kernel = PlanKernel.open(".demo-plan")
 ```
 
-`PlanKernel.open()` is a correctness operation, not a permissive loader.
+`PlanKernel.open()` is a correctness operation, not a permissive loader: unsupported or correctness-significant unknown state fails closed.
 
-## Deterministic release gates
+## Frozen release evidence
 
-| Surface | Required / verified bounded result |
+The `0.9.0a1` runtime release commit is:
+
+```text
+d11abb4468c701622d0e78722f1a0e54c94aa920
+```
+
+That exact runtime release line was closed through release-head CI, pull-request synthetic-merge CI, and a fresh final-`main` CI matrix on Python **3.11 / 3.12 / 3.13** before later presentation-only documentation changes.
+
+| Gate | Frozen result |
 |---|---:|
+| Unit/integration discovery at pre-release implementation head | 534 tests pass |
 | Principal-scope projection oracle | v0.14 `108` collisions → v0.15 `0` |
 | Wave 2 adversarial conformance | 10/10 |
 | Wave 3 adversarial / mutations | 12/12 + 4/4 |
@@ -125,40 +182,95 @@ kernel = PlanKernel.open(".demo-plan")
 | Wave 6 adversarial / mutations | 43/43 + 12/12 |
 | Wave 7 adversarial / mutations | 32/32 + 12/12 |
 | Wave 8 unified conformance / mutations / coverage | GREEN + 12/12 killed, 0 invalid + GREEN |
-| Wave 9 registry | 56 invariants; `15e4876c1fabe75bbfe78c5f3a921299315863277bc791ac5324bf6115204ea8` |
-| Wave 9 deterministic production-fault schedules | 12/12; `acd59b52184cea99cd5101fde9cb83c74f947b207af813c6ac81388eaf60e01a` |
-| Wave 9 differential equivalence | 4/4; `14ab39e4b32a5e235c245dee5507b0e1b3f7196845d8d44a05076d667166a3df` |
+| Wave 9 registry | 56 invariants |
+| Wave 9 deterministic production-fault schedules | 12/12 |
+| Wave 9 differential equivalence | 4/4 |
 | Wave 9 constitutional mutations | 12/12 killed; 0 invalid |
 | Wave 9 bounded coverage ledger | 36/36 GREEN; 0 PARTIAL/orphan/evidence-free GREEN |
-| Wave 9 release-conformance digest | `ded92c7e947ce2c3eeb82fb9b6fd36c3563e6b6fb71f5a3172450b48a8c98188` |
-| Wave 9 coverage digest | `2f33d179b69238051ab2db1ba9a0662b52f6292450233bf2b18613ddf3ae6564` |
-| Unit/integration discovery at pre-release head | 534 tests pass |
 | Python matrix | 3.11 / 3.12 / 3.13 |
 
-Pre-release implementation head `97ce80f13fd22e2347caf99e625865cfd2bb88f5` reproduced the complete historical + Wave-9 surface in CI run `33468034330`. Release closure additionally requires the exact `0.9.0a1` release head, pull-request synthetic merge and final `main` to reproduce the matrix.
+<details>
+<summary><strong>Frozen Wave-9 digests</strong></summary>
 
-## Wave-9 package map
+```text
+Registry
+15e4876c1fabe75bbfe78c5f3a921299315863277bc791ac5324bf6115204ea8
+
+Chaos
+acd59b52184cea99cd5101fde9cb83c74f947b207af813c6ac81388eaf60e01a
+
+Differential
+14ab39e4b32a5e235c245dee5507b0e1b3f7196845d8d44a05076d667166a3df
+
+Release conformance
+ded92c7e947ce2c3eeb82fb9b6fd36c3563e6b6fb71f5a3172450b48a8c98188
+
+Coverage
+2f33d179b69238051ab2db1ba9a0662b52f6292450233bf2b18613ddf3ae6564
+```
+
+</details>
+
+## Package map
 
 | Module | Responsibility |
 |---|---|
-| `production_store` | storage capability profiles, authority epochs, durable exact-revision commit/CAS semantics |
+| `PlanKernel` / core runtime | canonical correctness writer and runtime coordination |
+| `production_store` | storage capability profiles, Authority Epochs, exact-revision durable commit/CAS semantics |
 | `destructive_compaction` | bounded prepare/shadow/switch/retire protocol and retention closure |
 | `destructive_compaction_runtime` | kernel integration and restart-safe compaction state |
 | `execution_contract` | adapter capability, cancellation, fencing, acknowledgement and compensation contracts |
-| `execution_contract_runtime` | exact runtime binding of authorization to execution-contract semantics |
+| `execution_contract_runtime` | exact authorization-to-adapter contract binding |
 | `multiwriter` | writer identities, epoch leases and strong multi-writer coordination |
-| `multiwriter_runtime` | kernel/storage authority-epoch binding and stale-authority rejection |
-| `wave9_registry` | frozen DC/EX/MW + mutation + coverage invariant registry |
+| `multiwriter_runtime` | storage/kernel authority binding and stale-authority rejection |
+| `wave9_registry` | frozen Wave-9 invariant registry |
 | `wave9_chaos` | deterministic production-fault schedules |
 | `wave9_differential` | bounded live/restart/replay equivalence checks |
-| `wave9_coverage` | final Wave-9 source/spec evidence audit |
+| `wave9_coverage` | final source/spec evidence audit |
 
-Wave-8 falsification modules and all earlier kernel, proof, policy, schedulability, lineage, migration, replay and compaction modules remain mandatory regression surfaces.
+Earlier proof, policy, schedulability, liveness, lineage, migration, replay, compaction and Wave-8 falsification modules remain mandatory regression surfaces.
 
-## Research and engineering boundary
+## What Nolane Plan deliberately does **not** claim
 
-`GREEN` means tested correctness for the explicitly bounded reference-runtime contracts. It is not a formal proof of arbitrary production correctness and is not evidence of empirical superiority over other planning systems.
+`GREEN` means tested correctness for the exact bounded contracts represented by the repository. It does **not** mean universal formal correctness or empirical superiority over every planner.
 
-Wave 9 deliberately does **not** claim universal distributed consensus, arbitrary multi-host coordination, arbitrary database/storage-engine compaction or garbage collection, universal physical remote cancellation, or durability stronger than the storage/adapter capabilities actually declared and verified. The in-memory production-store implementation is a semantic reference, not itself a durable deployment backend.
+`0.9.0a1` does not claim:
 
-Generalized open/opaque candidate-universe minimality, generalized constraint theories, arbitrary external historical schemas and benchmark superiority remain RESEARCH or BOUNDARY. No Wave-10+ surface is part of `0.9.0a1`.
+- universal distributed consensus;
+- arbitrary multi-host crash safety;
+- arbitrary database/storage-engine garbage-collection or compaction safety;
+- universal physical remote cancellation;
+- durability stronger than the declared storage/adapter capabilities;
+- generalized open-world candidate-universe minimality;
+- generalized arbitrary constraint-theory completeness;
+- benchmark superiority over other planning systems;
+- any Wave-10+ capability.
+
+The in-memory production store is a **semantic reference backend**, not itself a claim of production durable storage.
+
+## Documentation
+
+- [`CONFORMANCE.md`](CONFORMANCE.md) — executable correctness/evidence surface.
+- [`SECURITY.md`](SECURITY.md) — security and trust boundaries.
+- [`CHANGELOG.md`](CHANGELOG.md) — release history.
+- [`docs/superpowers/specs/`](docs/superpowers/specs/) — checked-in architecture/design specifications.
+- [`docs/superpowers/plans/`](docs/superpowers/plans/) — implementation plans and closure contracts.
+- [`docs/releases/v0.9.0a1.md`](docs/releases/v0.9.0a1.md) — release notes for the current runtime line.
+
+## Languages
+
+- **English:** [`README.md`](README.md)
+- **Tiếng Việt:** [`README-VN.md`](README-VN.md)
+- **简体中文:** [`README-CN.md`](README-CN.md)
+
+## License
+
+Nolane Plan is released under the [MIT License](LICENSE).
+
+---
+
+<div align="center">
+
+**Nolane Plan** — strategic futures should be executable, inspectable, replayable, and falsifiable.
+
+</div>
