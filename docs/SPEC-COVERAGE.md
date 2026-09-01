@@ -113,7 +113,7 @@ Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GR
 | Migration cannot silently preserve authority or reinterpret ambiguous external effects | GREEN for declared runtime migration path | W7/W8 |
 | Reversible representation-only graph compaction with read-only archive/reconstruction | GREEN for bounded reference runtime | W7/W8 |
 | Compaction retains active authority, dormant/resurrection, proof/evidence/debt and unique-fallback lineage | GREEN | W7/W8/W9 |
-| Production physical history deletion/general storage-engine compaction | GREEN for the Wave-9 bounded production-store destructive-compaction contract / PARTIAL — arbitrary storage-engine compaction remains outside the reference runtime | W9 |
+| Production physical history deletion/general storage-engine compaction | BOUNDARY/PARTIAL — physical deletion and storage-engine compaction are explicitly outside the reference runtime | W8/non-goal review |
 | PG01-PG40 registry | GREEN | existing |
 | I-65..I-72 v0.6 schedulability/liveness invariants | GREEN for bounded reference-runtime scope | W6 |
 | I-245..I-260 principal-scoped closure | GREEN for declared principal/authority paths / PARTIAL — wider source-spec claims outside the enumerated runtime remain unpromoted | W3-W9 |
@@ -127,11 +127,8 @@ Legend: `GREEN` = on a tested correctness path for the stated bounded scope; `GR
 | Python 3.11/3.12/3.13 Wave-7 implementation matrix | GREEN — final release SHA `78e44da066bd362a2ee935c06ad5902bb0872238`; final-main CI `33350465557`; 408 tests + compile/oracle/Wave2–7 gates/demo | W7 |
 | Property/metamorphic/chaos/differential conformance | GREEN — frozen Wave-8 P01–P10, M01–M12, C01–C10 and D01–D10 executable suites with deterministic seeded runners | W8 |
 | Python 3.11/3.12/3.13 Wave-8 implementation matrix | GREEN — final release SHA `8f0288ee2119a05a83923ae16e0ec56b7cbad1c8`; final-main CI `33367224457`; 464 tests + compile/oracle/Wave2–8 gates/demo | W8 |
-| Bounded destructive production-store compaction | GREEN for source→shadow→CAS switch→retire→verify under declared production-store capabilities | W9 |
-| Bounded external execution capability/cancellation/compensation contract | GREEN for exact adapter-revision/authority-epoch evidence paths | W9 |
-| Bounded multi-writer correctness authority | GREEN for backends proving CAS + fencing + durable acknowledgement; consensus remains outside scope | W9 |
 | Real benchmark worlds / empirical superiority | RESEARCH | W8 measurement only |
-| Distributed correctness writers / consensus | GREEN for the Wave-9 bounded CAS/fencing authority protocol / BOUNDARY — generic consensus, replication and distributed transaction protocols remain out of scope | W9 |
+| Distributed correctness writers / consensus | BOUNDARY | not v0.15 |
 | Generic identity provider | BOUNDARY | not v0.15 |
 | Generic scheduler/orchestrator product | BOUNDARY | not v0.15 |
 | Generic messaging/task marketplace/orchestration platform | BOUNDARY | not v0.15 |
