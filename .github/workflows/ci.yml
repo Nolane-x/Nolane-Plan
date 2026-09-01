@@ -1,98 +1,120 @@
-name: Wave 9 Release Evidence
+name: Wave 9 Release Prep
 
 on:
   push:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  evidence:
+  release-prep:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: wave9-production-correctness-distributed-authority
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install
-        run: python -m pip install -e .
-      - name: Capture deterministic release evidence
+      - name: Verify exact pre-release head
         run: |
-          python - <<'PY' | tee wave9-release-evidence.txt
-          import importlib.util
-          import sys
+          test "$(git rev-parse HEAD)" = "97ce80f13fd22e2347caf99e625865cfd2bb88f5"
+      - name: Apply bounded Wave 9 release closure
+        run: |
+          python - <<'PY'
           from pathlib import Path
 
-          from nolane_plan.hashing import digest
-          from nolane_plan.wave9_chaos import run_wave9_chaos
-          from nolane_plan.wave9_coverage import audit_repository_coverage
-          from nolane_plan.wave9_differential import run_wave9_differential
-          from nolane_plan.wave9_registry import validate_wave9_registry
+          REGISTRY = "15e4876c1fabe75bbfe78c5f3a921299315863277bc791ac5324bf6115204ea8"
+          CHAOS = "acd59b52184cea99cd5101fde9cb83c74f947b207af813c6ac81388eaf60e01a"
+          DIFFERENTIAL = "14ab39e4b32a5e235c245dee5507b0e1b3f7196845d8d44a05076d667166a3df"
+          CONFORMANCE = "ded92c7e947ce2c3eeb82fb9b6fd36c3563e6b6fb71f5a3172450b48a8c98188"
+          COVERAGE = "2f33d179b69238051ab2db1ba9a0662b52f6292450233bf2b18613ddf3ae6564"
+          PRE_HEAD = "97ce80f13fd22e2347caf99e625865cfd2bb88f5"
+          PRE_RUN = "33468034330"
 
-          script = Path("scripts/wave9_mutation_gate.py").resolve()
-          spec = importlib.util.spec_from_file_location("wave9_release_mutation_gate", script)
-          if spec is None or spec.loader is None:
-              raise SystemExit("cannot load Wave 9 mutation gate")
-          gate = importlib.util.module_from_spec(spec)
-          sys.modules[spec.name] = gate
-          spec.loader.exec_module(gate)
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one replacement anchor, found {count}: {old!r}")
+              p.write_text(text.replace(old, new, 1), encoding="utf-8")
 
-          registry_digest = validate_wave9_registry()
-          chaos = run_wave9_chaos()
-          differential = run_wave9_differential()
-          coverage = audit_repository_coverage()
+          replace_once("pyproject.toml", 'version = "0.8.0a1"', 'version = "0.9.0a1"')
+          replace_once("src/nolane_plan/__init__.py", '__version__ = "0.8.0a1"', '__version__ = "0.9.0a1"')
 
-          mutations = []
-          for mutation in gate.MUTATIONS:
-              outcome, detail = gate.run_mutation(mutation)
-              mutations.append({
-                  "mutant_id": mutation.mutant_id,
-                  "name": mutation.name,
-                  "target_invariant_id": mutation.target_invariant_id,
-                  "outcome": outcome.value,
-              })
-              print(f"MUTATION {mutation.mutant_id} {outcome.value}")
-              if outcome is not gate.ProbeOutcome.KILLED:
-                  print(detail)
+          changelog = Path("CHANGELOG.md")
+          current = changelog.read_text(encoding="utf-8")
+          marker = "# Changelog\n\n"
+          if current.count(marker) != 1:
+              raise SystemExit("CHANGELOG.md: unexpected header")
+          entry = f'''## 0.9.0a1 — 2026-09-01\n\nWave 9 closes the bounded **Production Correctness / Distributed Authority** scope defined by the checked-in Wave-9 plan. It does not open Wave 10 or claim arbitrary distributed-system correctness.\n\n### Production correctness closure\n\n- production-store authority epochs bind backend identity/revision, writer identity and immediately prior epoch; stale writers and stale revisions fail closed;\n- strong multi-writer operation is admitted only for storage profiles with the required durable acknowledgement, compare-and-swap and fencing semantics; weaker profiles remain explicitly unsupported for that claim;\n- destructive compaction follows prepare → shadow → durable switch → retire, retaining exact protected lineage and refusing source retirement before the target switch is durably observable;\n- external execution binds the exact adapter revision and capability contract; cancellation never becomes stronger than the adapter contract, best-effort cancellation remains ambiguous, and compensation remains a distinct effect;\n- restart/replay preserves Wave-9 storage, authority, execution and compaction sidecars while unknown correctness-significant events continue to fail closed.\n\n### Frozen release evidence\n\n- pre-release implementation head: `{PRE_HEAD}`; CI run `{PRE_RUN}`; Python 3.11 / 3.12 / 3.13 GREEN;\n- Wave-9 registry: 56 invariants; digest `{REGISTRY}`;\n- deterministic production-fault schedules: 12/12; digest `{CHAOS}`;\n- differential equivalence: 4/4; digest `{DIFFERENTIAL}`;\n- constitutional mutations: 12/12 killed, 0 invalid;\n- unified Wave-9 release-conformance digest: `{CONFORMANCE}`;\n- Wave-9 coverage ledger: 36/36 GREEN, 0 PARTIAL, 0 orphan, 0 evidence-free GREEN; digest `{COVERAGE}`.\n\n### Claim boundary\n\nWave 9 does **not** establish universal distributed consensus, arbitrary storage-engine compaction/garbage collection, universal remote cancellation, or crash/durability guarantees beyond the explicit production-store and adapter capability contracts. Historical Wave 2–8 gates remain mandatory release obligations.\n\n'''
+          changelog.write_text(current.replace(marker, marker + entry, 1), encoding="utf-8")
 
-          conformance_payload = {
-              "registry_digest": registry_digest,
-              "chaos_digest": chaos.canonical_digest,
-              "differential_digest": differential.canonical_digest,
-              "mutations": tuple(
-                  (row["mutant_id"], row["name"], row["target_invariant_id"], row["outcome"])
-                  for row in mutations
-              ),
-          }
-          conformance_digest = digest(conformance_payload)
+          registry_test = Path("tests/test_wave9_registry.py")
+          text = registry_test.read_text(encoding="utf-8")
+          old = "        self.assertEqual(first, WAVE9_REGISTRY_DIGEST)\n        self.assertEqual(second, WAVE9_REGISTRY_DIGEST)"
+          new = f'''        self.assertEqual(first, WAVE9_REGISTRY_DIGEST)\n        self.assertEqual(\n            first,\n            "{REGISTRY}",\n        )\n        self.assertEqual(second, WAVE9_REGISTRY_DIGEST)'''
+          if text.count(old) != 1:
+              raise SystemExit("tests/test_wave9_registry.py: freeze anchor drifted")
+          registry_test.write_text(text.replace(old, new, 1), encoding="utf-8")
 
-          print(f"WAVE9_REGISTRY_DIGEST={registry_digest}")
-          print(f"WAVE9_CHAOS={chaos.passed_count}/{chaos.case_count}")
-          print(f"WAVE9_CHAOS_DIGEST={chaos.canonical_digest}")
-          print(f"WAVE9_DIFFERENTIAL={differential.passed_count}/{differential.case_count}")
-          print(f"WAVE9_DIFFERENTIAL_DIGEST={differential.canonical_digest}")
-          print(f"WAVE9_MUTATIONS_CAUGHT={sum(row['outcome'] == 'KILLED' for row in mutations)}/{len(mutations)}")
-          print(f"WAVE9_MUTATIONS_INVALID={sum(row['outcome'] == 'INVALID' for row in mutations)}")
-          print(f"WAVE9_CONFORMANCE_DIGEST={conformance_digest}")
-          print(f"WAVE9_COVERAGE_ROWS={coverage.row_count}")
-          print(f"WAVE9_COVERAGE_GREEN={coverage.green_count}")
-          print(f"WAVE9_COVERAGE_PARTIAL={coverage.partial_count}")
-          print(f"WAVE9_COVERAGE_ORPHANS={coverage.orphan_count}")
-          print(f"WAVE9_COVERAGE_EVIDENCE_FREE_GREEN={coverage.evidence_free_green_count}")
-          print(f"WAVE9_COVERAGE_DIGEST={coverage.canonical_digest}")
+          readme = Path("README.md")
+          text = readme.read_text(encoding="utf-8")
+          a = text.index("## Runtime line\n")
+          b = text.index("## Core architecture\n")
+          runtime = f'''## Runtime line\n\n`0.9.0a1` is the Wave-9 **Production Correctness / Distributed Authority** release line.\n\nWave 9 keeps the established planning, proof, policy, replay, migration and Wave-8 falsification stack and closes three explicitly bounded production surfaces rather than adding a new planner:\n\n- production-store destructive compaction with prepare, shadow verification, durable pointer switch and conservative retirement;\n- adapter-bound external execution semantics with exact dispatch, cancellation, fencing, reconciliation and compensation contracts;\n- strong multi-writer authority only on storage profiles that actually provide the required durable acknowledgement, exact-revision CAS and fencing semantics.\n\nRestart/replay preserves the new correctness-significant sidecars, stale authority fails closed, and weaker storage or execution backends are not promoted into stronger guarantees. Historical Wave 2–8 gates remain mandatory.\n\nFrozen Wave-9 registry digest: `{REGISTRY}`.\n\n'''
+          text = text[:a] + runtime + text[b:]
 
-          if (
-              chaos.failed_count
-              or differential.failed_count
-              or not coverage.passed
-              or any(row["outcome"] != "KILLED" for row in mutations)
-          ):
-              raise SystemExit(1)
+          quick_anchor = "python -m nolane_plan.wave8_coverage\n"
+          if text.count(quick_anchor) != 1:
+              raise SystemExit("README.md: quick-start anchor drifted")
+          text = text.replace(
+              quick_anchor,
+              quick_anchor
+              + "python -m nolane_plan.wave9_chaos\n"
+              + "python -m nolane_plan.wave9_differential\n"
+              + "python scripts/wave9_mutation_gate.py\n"
+              + "python -m nolane_plan.wave9_coverage\n",
+              1,
+          )
+
+          a = text.index("## Deterministic release gates\n")
+          b = text.index("## Wave-8 package map\n")
+          gates = f'''## Deterministic release gates\n\n| Surface | Required / verified bounded result |\n|---|---:|\n| Principal-scope projection oracle | v0.14 `108` collisions → v0.15 `0` |\n| Wave 2 adversarial conformance | 10/10 |\n| Wave 3 adversarial / mutations | 12/12 + 4/4 |\n| Wave 4 adversarial / mutations | 14/14 + 7/7 |\n| Wave 5 adversarial / mutations | 29/29 + 13/13 |\n| Wave 6 adversarial / mutations | 43/43 + 12/12 |\n| Wave 7 adversarial / mutations | 32/32 + 12/12 |\n| Wave 8 unified conformance / mutations / coverage | GREEN + 12/12 killed, 0 invalid + GREEN |\n| Wave 9 registry | 56 invariants; `{REGISTRY}` |\n| Wave 9 deterministic production-fault schedules | 12/12; `{CHAOS}` |\n| Wave 9 differential equivalence | 4/4; `{DIFFERENTIAL}` |\n| Wave 9 constitutional mutations | 12/12 killed; 0 invalid |\n| Wave 9 bounded coverage ledger | 36/36 GREEN; 0 PARTIAL/orphan/evidence-free GREEN |\n| Wave 9 release-conformance digest | `{CONFORMANCE}` |\n| Wave 9 coverage digest | `{COVERAGE}` |\n| Unit/integration discovery at pre-release head | 534 tests pass |\n| Python matrix | 3.11 / 3.12 / 3.13 |\n\nPre-release implementation head `{PRE_HEAD}` reproduced the complete historical + Wave-9 surface in CI run `{PRE_RUN}`. Release closure additionally requires the exact `0.9.0a1` release head, pull-request synthetic merge and final `main` to reproduce the matrix.\n\n'''
+          text = text[:a] + gates + text[b:]
+
+          a = text.index("## Wave-8 package map\n")
+          b = text.index("## Research and engineering boundary\n")
+          package_map = '''## Wave-9 package map\n\n| Module | Responsibility |\n|---|---|\n| `production_store` | storage capability profiles, authority epochs, durable exact-revision commit/CAS semantics |\n| `destructive_compaction` | bounded prepare/shadow/switch/retire protocol and retention closure |\n| `destructive_compaction_runtime` | kernel integration and restart-safe compaction state |\n| `execution_contract` | adapter capability, cancellation, fencing, acknowledgement and compensation contracts |\n| `execution_contract_runtime` | exact runtime binding of authorization to execution-contract semantics |\n| `multiwriter` | writer identities, epoch leases and strong multi-writer coordination |\n| `multiwriter_runtime` | kernel/storage authority-epoch binding and stale-authority rejection |\n| `wave9_registry` | frozen DC/EX/MW + mutation + coverage invariant registry |\n| `wave9_chaos` | deterministic production-fault schedules |\n| `wave9_differential` | bounded live/restart/replay equivalence checks |\n| `wave9_coverage` | final Wave-9 source/spec evidence audit |\n\nWave-8 falsification modules and all earlier kernel, proof, policy, schedulability, lineage, migration, replay and compaction modules remain mandatory regression surfaces.\n\n'''
+          text = text[:a] + package_map + text[b:]
+
+          a = text.index("## Research and engineering boundary\n")
+          boundary = '''## Research and engineering boundary\n\n`GREEN` means tested correctness for the explicitly bounded reference-runtime contracts. It is not a formal proof of arbitrary production correctness and is not evidence of empirical superiority over other planning systems.\n\nWave 9 deliberately does **not** claim universal distributed consensus, arbitrary multi-host coordination, arbitrary database/storage-engine compaction or garbage collection, universal physical remote cancellation, or durability stronger than the storage/adapter capabilities actually declared and verified. The in-memory production-store implementation is a semantic reference, not itself a durable deployment backend.\n\nGeneralized open/opaque candidate-universe minimality, generalized constraint theories, arbitrary external historical schemas and benchmark superiority remain RESEARCH or BOUNDARY. No Wave-10+ surface is part of `0.9.0a1`.\n'''
+          text = text[:a] + boundary
+          readme.write_text(text, encoding="utf-8")
+
+          Path("CONFORMANCE.md").write_text(f'''# Nolane Plan Conformance\n\nThis document records the executable bounded conformance surface for the `0.9.0a1` Wave-9 release candidate. It is an evidence ledger, not a claim of global formal correctness or empirical superiority.\n\n## Release gate\n\nThe release is closed only when the exact release commit passes Python 3.11 / 3.12 / 3.13, its pull-request synthetic merge reproduces that matrix, and a fresh final-`main` push run succeeds at the same release SHA.\n\nPre-release implementation head `{PRE_HEAD}` passed the complete historical + Wave-9 matrix in CI run `{PRE_RUN}`. On Python 3.11, unit discovery ran 534 tests successfully; Python 3.12 and 3.13 also completed the matrix successfully.\n\n## Frozen Wave-9 evidence\n\n| Surface | Frozen result |\n|---|---:|\n| Registry | 56 invariants; `{REGISTRY}` |\n| Deterministic production-fault schedules | 12/12; `{CHAOS}` |\n| Differential equivalence | 4/4; `{DIFFERENTIAL}` |\n| Constitutional mutations | 12/12 killed; 0 invalid |\n| Coverage ledger | 36/36 GREEN; 0 PARTIAL; 0 orphan; 0 evidence-free GREEN |\n| Coverage digest | `{COVERAGE}` |\n| Unified Wave-9 release-conformance digest | `{CONFORMANCE}` |\n\nThe unified Wave-9 release-conformance digest is the canonical digest of the frozen registry digest, chaos digest, differential digest and the ordered tuple `(mutant_id, name, target_invariant_id, outcome)` for X01–X12. It is release evidence aggregation only; it does not create a second runtime authority.\n\n## Bounded correctness surface\n\n### Destructive compaction\n\nThe production-store path requires explicit prepare, shadow verification, durable production-pointer switch and conservative retirement. Active authority, dormant/resurrection, proof/evidence/debt and unique fallback references remain protected. Source retirement cannot precede a durably observable target switch. This is not a claim about arbitrary storage-engine garbage collection.\n\n### External execution\n\nAuthorization binds an exact adapter revision and execution contract. Dispatch acknowledgement, idempotency, remote fencing, cancellation and compensation are represented according to that contract. Best-effort or unsupported cancellation cannot be promoted to a clean cancelled outcome; compensation is a separate effect and does not erase the original external outcome.\n\n### Strong multi-writer authority\n\nStrong multi-writer claims require a storage capability profile with the required durable acknowledgement, exact-revision compare-and-swap and fencing semantics. Authority epochs are monotone, bind backend/writer identity and immediately prior epoch, and stale epoch authorization fails closed. Storage profiles that cannot uphold those semantics are not promoted to strong multi-writer support.\n\n### Restart and replay\n\nWave-9 correctness-significant storage, execution, compaction and authority sidecars survive supported snapshot/restart and replay paths. Unknown correctness-significant replay events remain fail-closed. Replay does not pretend to replay the external storage engine, remote service or device itself.\n\n## Historical regression obligations\n\nWave 2 through Wave 8 conformance, mutation and coverage gates remain mandatory. Wave 9 extends the verified surface; it does not replace or weaken prior constitutional gates.\n\n## Claim boundary\n\n`0.9.0a1` may be described as GREEN only for the exact bounded contracts exercised above. It does not establish universal distributed consensus, arbitrary multi-host crash safety, arbitrary database compaction/GC safety, universal physical remote cancellation, generalized external schema migration, formal global proof or empirical planning superiority. No Wave-10+ capability is included in this release.\n''', encoding="utf-8")
+
+          Path("SECURITY.md").write_text('''# Security and correctness boundary\n\nNolane Plan treats external/model content as untrusted with respect to authority. A model cannot establish its own principal identity, grant itself authority, turn global kernel visibility into personal knowledge, rewrite immutable semantic lineage, carry stale authority across a migration or storage epoch, or commit a world fact by narration.\n\nThe `0.9.0a1` reference implementation is not an identity provider, sandbox, generic scheduler, arbitrary storage engine, distributed consensus protocol or remote-service truth oracle. Hosts must provide principal identity/provenance and real external capability/resource observations at the assurance required by policy, and must prevent tool calls from bypassing the kernel authority/dispatch fence.\n\nCorrectness boundaries include the historical principal-scope, proof, policy, schedulability, lineage, migration, replay, cancellation and compaction invariants plus these Wave-9 production contracts:\n\n- **Production storage:** declared backend capabilities are part of the correctness claim. Strong multi-writer authority requires the necessary durable acknowledgement, exact-revision CAS and fencing semantics; weaker backends must remain single-writer or explicitly unsupported. The in-memory production store is a semantic reference and is not itself a durable deployment backend.\n- **Authority epochs:** epochs are monotone and bind backend revision, writer identity and predecessor. Old-epoch authorization cannot be resurrected after a newer epoch is acquired. The process-local `_writer_lock` remains a serialization aid, not a distributed lock or consensus protocol.\n- **Destructive compaction:** source retirement is permitted only after target shadow verification and a durably observable production-pointer switch while protected lineage remains retained/reconstructable. Wave 9 does not claim arbitrary database/storage-engine compaction or garbage-collection safety.\n- **External execution:** authorization binds the exact adapter revision and execution contract. Cancellation assurance cannot exceed the adapter contract; best-effort/unsupported cancellation remains ambiguous. Compensation is a distinct effect and cannot erase the original outcome.\n- **Restart/replay:** correctness-significant Wave-9 sidecars are restored on supported paths and unknown correctness-significant events fail closed. Replay does not reproduce the external storage engine, service or physical device.\n\n`PlanKernel.open()` remains a correctness operation. Snapshot import does not invent ancestry or authority, migration mappings do not mint authorization, and historical revisions remain distinct from current logical pointers.\n\nThe release claim remains explicitly bounded: no universal distributed consensus, arbitrary multi-host coordination/crash safety, arbitrary physical remote cancellation, generalized opaque constraint completeness, or Wave-10+ capability is asserted. Benchmark/reference-world measurements remain research observations rather than security evidence.\n\nPlease report semantic authorization, information-scope, proof-capture, policy, schedulability, lineage/revision, migration, compaction, cancellation, storage-epoch/CAS/fencing, replay, reconciliation or coverage-claim bypasses with a minimal reproducer whenever possible.\n''', encoding="utf-8")
           PY
-      - name: Upload release evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: wave9-release-evidence
-          path: wave9-release-evidence.txt
-          if-no-files-found: error
-          retention-days: 7
+      - name: Verify bounded release diff and focused gates
+        run: |
+          set -euo pipefail
+          expected=$(printf '%s\n' CHANGELOG.md CONFORMANCE.md README.md SECURITY.md pyproject.toml src/nolane_plan/__init__.py tests/test_wave9_registry.py | sort)
+          actual=$(git diff --name-only | sort)
+          test "$actual" = "$expected"
+          git diff --check
+          python -m pip install -e .
+          python -c "import nolane_plan; assert nolane_plan.__version__ == '0.9.0a1'"
+          python -m unittest discover -s tests -p 'test_wave9_registry.py' -v
+          python -m nolane_plan.wave9_coverage
+      - name: Commit and push exact release candidate
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md CONFORMANCE.md README.md SECURITY.md pyproject.toml src/nolane_plan/__init__.py tests/test_wave9_registry.py
+          git commit -m "chore: release 0.9.0a1"
+          git push origin HEAD:wave9-production-correctness-distributed-authority
