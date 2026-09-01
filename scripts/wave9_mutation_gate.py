@@ -271,10 +271,16 @@ def _prepare_compaction(backend_id: str):
 
 
 def _probe_dc06() -> bool:
+    from nolane_plan.destructive_compaction import DestructiveCompactionCoordinator
     holder, kernel, store, epoch = _prepare_compaction("probe-dc06")
     try:
-        kernel.commit_compaction_switch(store, epoch, "dc:probe")
-        from nolane_plan.destructive_compaction import DestructiveCompactionCoordinator
+        try:
+            kernel.commit_compaction_switch(store, epoch, "dc:probe")
+        except ValueError:
+            ids = set(DestructiveCompactionCoordinator(store).representation_ids())
+            if ids == {"target:r1"}:
+                return False
+            raise
         ids = set(DestructiveCompactionCoordinator(store).representation_ids())
         return ids == {"source:r1", "target:r1"}
     finally:
