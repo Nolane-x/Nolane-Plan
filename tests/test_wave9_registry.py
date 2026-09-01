@@ -31,6 +31,10 @@ class Wave9RegistryTests(unittest.TestCase):
         first = validate_wave9_registry()
         second = validate_wave9_registry()
         self.assertEqual(first, WAVE9_REGISTRY_DIGEST)
+        self.assertEqual(
+            first,
+            "15e4876c1fabe75bbfe78c5f3a921299315863277bc791ac5324bf6115204ea8",
+        )
         self.assertEqual(second, WAVE9_REGISTRY_DIGEST)
         self.assertEqual(first, second)
         for row in WAVE9_INVARIANTS:

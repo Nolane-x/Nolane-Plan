@@ -54,4 +54,4 @@ install_multiwriter_runtime(PlanKernel)
 install_wave9_snapshot(PlanKernel)
 
 __all__ = ["PlanKernel", "MissionContract", "MissionLedger", "RiskClass"]
-__version__ = "0.8.0a1"
+__version__ = "0.9.0a1"

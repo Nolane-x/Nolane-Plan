@@ -1,33 +1,19 @@
 # Security and correctness boundary
 
-Nolane Plan treats external/model content as untrusted with respect to authority. A model cannot establish its own principal identity, grant itself authority, turn global kernel visibility into personal knowledge, convert modeled-support totality into open-world certainty, rewrite immutable semantic lineage, carry stale authority across a regime migration, or commit a world fact by narration.
+Nolane Plan treats external/model content as untrusted with respect to authority. A model cannot establish its own principal identity, grant itself authority, turn global kernel visibility into personal knowledge, rewrite immutable semantic lineage, carry stale authority across a migration or storage epoch, or commit a world fact by narration.
 
-The reference implementation is not an identity provider, sandbox, generic scheduler, messaging platform, arbitrary storage engine or distributed consensus system. Hosts integrating real tools must provide principal identity/provenance and external capability/resource observations at the assurance level required by their risk policy, and must ensure tool calls cannot bypass the kernel's authority/dispatch fence.
+The `0.9.0a1` reference implementation is not an identity provider, sandbox, generic scheduler, arbitrary storage engine, distributed consensus protocol or remote-service truth oracle. Hosts must provide principal identity/provenance and real external capability/resource observations at the assurance required by policy, and must prevent tool calls from bypassing the kernel authority/dispatch fence.
 
-Correctness boundaries include:
+Correctness boundaries include the historical principal-scope, proof, policy, schedulability, lineage, migration, replay, cancellation and compaction invariants plus these Wave-9 production contracts:
 
-- host-grounded principal identity, recipient/time-grounded information observation and exact execution-principal binding;
-- proof dependency capture, semantic/query freshness and positive-support vs blocking-invalidity separation;
-- principal-relative non-anticipativity, sealed policy closure and advisory-only selection;
-- adapter capability revision, durable dispatch-before-side-effect and evidence-bound reconciliation;
-- joint control-plane schedulability, protected deadline-critical capacity and bounded repeated handoff liveness;
-- activation-time edge freshness/refresh and failure-set-relative option independence;
-- immutable canonical lineage with stable logical identity, exact revision identity, parent/provenance/debt retention and typed semantic regimes;
-- exact DecisionEpoch/proof/policy/schedulability/action lineage in authorization, with currentness rechecked before dispatch;
-- six-disposition semantic migration with explicit debt/identity handling, conservative authority invalidation and verified bridges for ambiguous external effects;
-- verified snapshot-v7/journal prefix binding, canonical internal digests, conservative historical import and fail-closed replay;
-- representation-only compaction that retains or archives active-authority, dormant/resurrection, proof/evidence/debt and unique-fallback lineage and proves reconstructability for its certified scope;
-- post-dispatch cancellation that remains `CANCELLATION_PENDING` until exact evidence-bound reconciliation rather than being reported as clean cancellation;
-- relocation classification that preserves `AMBIGUOUS` and `UNLOCATED` states instead of selecting a convenient region;
-- bounded finite global exclusion and N-way context composition that fail closed for incomplete/opaque universes or unsupported theories;
-- deterministic property, metamorphic, chaos, differential, reference-world and target-specific mutation falsification across the Wave-8 registry.
+- **Production storage:** declared backend capabilities are part of the correctness claim. Strong multi-writer authority requires the necessary durable acknowledgement, exact-revision CAS and fencing semantics; weaker backends must remain single-writer or explicitly unsupported. The in-memory production store is a semantic reference and is not itself a durable deployment backend.
+- **Authority epochs:** epochs are monotone and bind backend revision, writer identity and predecessor. Old-epoch authorization cannot be resurrected after a newer epoch is acquired. The process-local `_writer_lock` remains a serialization aid, not a distributed lock or consensus protocol.
+- **Destructive compaction:** source retirement is permitted only after target shadow verification and a durably observable production-pointer switch while protected lineage remains retained/reconstructable. Wave 9 does not claim arbitrary database/storage-engine compaction or garbage-collection safety.
+- **External execution:** authorization binds the exact adapter revision and execution contract. Cancellation assurance cannot exceed the adapter contract; best-effort/unsupported cancellation remains ambiguous. Compensation is a distinct effect and cannot erase the original outcome.
+- **Restart/replay:** correctness-significant Wave-9 sidecars are restored on supported paths and unknown correctness-significant events fail closed. Replay does not reproduce the external storage engine, service or physical device.
 
-`PlanKernel.open()` is a correctness operation. Unsupported correctness-significant post-snapshot events fail closed. Snapshot import does not invent strong ancestry, migration mappings do not mint or revive authorization, and historical revisions remain distinct from current logical pointers so stale authority cannot resurrect merely because old bytes still exist.
+`PlanKernel.open()` remains a correctness operation. Snapshot import does not invent ancestry or authority, migration mappings do not mint authorization, and historical revisions remain distinct from current logical pointers.
 
-Cancellation safety is deliberately about the runtime's durable transaction protocol. The reference runtime does not claim arbitrary adapters can physically cancel an external side effect after dispatch; residual ambiguity must therefore remain explicit until reconciled.
+The release claim remains explicitly bounded: no universal distributed consensus, arbitrary multi-host coordination/crash safety, arbitrary physical remote cancellation, generalized opaque constraint completeness, or Wave-10+ capability is asserted. Benchmark/reference-world measurements remain research observations rather than security evidence.
 
-Compaction is deliberately conservative: canonical lineage is retained or moved into a read-only reconstructable archive rather than destructively deleted merely for age or representation size. This is not a claim about arbitrary production-storage compaction safety.
-
-Wave-8 benchmark/reference-world measurements are not security or correctness evidence. Generalized external schema migration, arbitrary physical cancellation, generalized opaque constraint theories, distributed correctness writers/consensus and production hardening remain outside the bounded release claim.
-
-Please report semantic authorization, information-scope, causal-cut, proof-capture, policy, schedulability, handoff-liveness, edge-freshness, common-mode independence, lineage/revision, migration, compaction, cancellation, relocation, replay, reconciliation, coverage-claim or postcondition bypasses with a minimal reproducer whenever possible.
+Please report semantic authorization, information-scope, proof-capture, policy, schedulability, lineage/revision, migration, compaction, cancellation, storage-epoch/CAS/fencing, replay, reconciliation or coverage-claim bypasses with a minimal reproducer whenever possible.

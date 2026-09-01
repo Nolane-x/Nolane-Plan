@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.9.0a1 — 2026-09-01
+
+Wave 9 closes the bounded **Production Correctness / Distributed Authority** scope defined by the checked-in Wave-9 plan. It does not open Wave 10 or claim arbitrary distributed-system correctness.
+
+### Production correctness closure
+
+- production-store authority epochs bind backend identity/revision, writer identity and immediately prior epoch; stale writers and stale revisions fail closed;
+- strong multi-writer operation is admitted only for storage profiles with the required durable acknowledgement, compare-and-swap and fencing semantics; weaker profiles remain explicitly unsupported for that claim;
+- destructive compaction follows prepare → shadow → durable switch → retire, retaining exact protected lineage and refusing source retirement before the target switch is durably observable;
+- external execution binds the exact adapter revision and capability contract; cancellation never becomes stronger than the adapter contract, best-effort cancellation remains ambiguous, and compensation remains a distinct effect;
+- restart/replay preserves Wave-9 storage, authority, execution and compaction sidecars while unknown correctness-significant events continue to fail closed.
+
+### Frozen release evidence
+
+- pre-release implementation head: `97ce80f13fd22e2347caf99e625865cfd2bb88f5`; CI run `33468034330`; Python 3.11 / 3.12 / 3.13 GREEN;
+- Wave-9 registry: 56 invariants; digest `15e4876c1fabe75bbfe78c5f3a921299315863277bc791ac5324bf6115204ea8`;
+- deterministic production-fault schedules: 12/12; digest `acd59b52184cea99cd5101fde9cb83c74f947b207af813c6ac81388eaf60e01a`;
+- differential equivalence: 4/4; digest `14ab39e4b32a5e235c245dee5507b0e1b3f7196845d8d44a05076d667166a3df`;
+- constitutional mutations: 12/12 killed, 0 invalid;
+- unified Wave-9 release-conformance digest: `ded92c7e947ce2c3eeb82fb9b6fd36c3563e6b6fb71f5a3172450b48a8c98188`;
+- Wave-9 coverage ledger: 36/36 GREEN, 0 PARTIAL, 0 orphan, 0 evidence-free GREEN; digest `2f33d179b69238051ab2db1ba9a0662b52f6292450233bf2b18613ddf3ae6564`.
+
+### Claim boundary
+
+Wave 9 does **not** establish universal distributed consensus, arbitrary storage-engine compaction/garbage collection, universal remote cancellation, or crash/durability guarantees beyond the explicit production-store and adapter capability contracts. Historical Wave 2–8 gates remain mandatory release obligations.
+
 ## 0.8.0a1 — 2026-08-31
 
 - Added the frozen Wave-8 conformance registry with exactly 68 invariants: P01–P10 properties, M01–M12 metamorphic relations, C01–C10 deterministic chaos cases, D01–D10 differential/restart relations, X01–X12 constitutional mutants, W01–W06 reference worlds and S01–S08 coverage invariants. The release freezes registry digest `d9f4e9fd9cd111c3a458b2018686060b74235102702352230f7546360a942dfc`.
