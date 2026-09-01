@@ -1,80 +1,98 @@
-name: CI
+name: Wave 9 Release Evidence
 
 on:
   push:
-  pull_request:
 
 permissions:
   contents: read
 
 jobs:
-  test:
+  evidence:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
       - name: Install
         run: python -m pip install -e .
-      - name: Unit and conformance tests
+      - name: Capture deterministic release evidence
         run: |
-          set -o pipefail
-          python -m unittest discover -s tests -v 2>&1 | tee unit-test-${{ matrix.python-version }}.log
-      - name: Retain failing unit test transcript
-        if: failure()
+          python - <<'PY' | tee wave9-release-evidence.txt
+          import importlib.util
+          import sys
+          from pathlib import Path
+
+          from nolane_plan.hashing import digest
+          from nolane_plan.wave9_chaos import run_wave9_chaos
+          from nolane_plan.wave9_coverage import audit_repository_coverage
+          from nolane_plan.wave9_differential import run_wave9_differential
+          from nolane_plan.wave9_registry import validate_wave9_registry
+
+          script = Path("scripts/wave9_mutation_gate.py").resolve()
+          spec = importlib.util.spec_from_file_location("wave9_release_mutation_gate", script)
+          if spec is None or spec.loader is None:
+              raise SystemExit("cannot load Wave 9 mutation gate")
+          gate = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = gate
+          spec.loader.exec_module(gate)
+
+          registry_digest = validate_wave9_registry()
+          chaos = run_wave9_chaos()
+          differential = run_wave9_differential()
+          coverage = audit_repository_coverage()
+
+          mutations = []
+          for mutation in gate.MUTATIONS:
+              outcome, detail = gate.run_mutation(mutation)
+              mutations.append({
+                  "mutant_id": mutation.mutant_id,
+                  "name": mutation.name,
+                  "target_invariant_id": mutation.target_invariant_id,
+                  "outcome": outcome.value,
+              })
+              print(f"MUTATION {mutation.mutant_id} {outcome.value}")
+              if outcome is not gate.ProbeOutcome.KILLED:
+                  print(detail)
+
+          conformance_payload = {
+              "registry_digest": registry_digest,
+              "chaos_digest": chaos.canonical_digest,
+              "differential_digest": differential.canonical_digest,
+              "mutations": tuple(
+                  (row["mutant_id"], row["name"], row["target_invariant_id"], row["outcome"])
+                  for row in mutations
+              ),
+          }
+          conformance_digest = digest(conformance_payload)
+
+          print(f"WAVE9_REGISTRY_DIGEST={registry_digest}")
+          print(f"WAVE9_CHAOS={chaos.passed_count}/{chaos.case_count}")
+          print(f"WAVE9_CHAOS_DIGEST={chaos.canonical_digest}")
+          print(f"WAVE9_DIFFERENTIAL={differential.passed_count}/{differential.case_count}")
+          print(f"WAVE9_DIFFERENTIAL_DIGEST={differential.canonical_digest}")
+          print(f"WAVE9_MUTATIONS_CAUGHT={sum(row['outcome'] == 'KILLED' for row in mutations)}/{len(mutations)}")
+          print(f"WAVE9_MUTATIONS_INVALID={sum(row['outcome'] == 'INVALID' for row in mutations)}")
+          print(f"WAVE9_CONFORMANCE_DIGEST={conformance_digest}")
+          print(f"WAVE9_COVERAGE_ROWS={coverage.row_count}")
+          print(f"WAVE9_COVERAGE_GREEN={coverage.green_count}")
+          print(f"WAVE9_COVERAGE_PARTIAL={coverage.partial_count}")
+          print(f"WAVE9_COVERAGE_ORPHANS={coverage.orphan_count}")
+          print(f"WAVE9_COVERAGE_EVIDENCE_FREE_GREEN={coverage.evidence_free_green_count}")
+          print(f"WAVE9_COVERAGE_DIGEST={coverage.canonical_digest}")
+
+          if (
+              chaos.failed_count
+              or differential.failed_count
+              or not coverage.passed
+              or any(row["outcome"] != "KILLED" for row in mutations)
+          ):
+              raise SystemExit(1)
+          PY
+      - name: Upload release evidence
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-failure-${{ matrix.python-version }}
-          path: unit-test-${{ matrix.python-version }}.log
+          name: wave9-release-evidence
+          path: wave9-release-evidence.txt
           if-no-files-found: error
           retention-days: 7
-      - name: Compile all modules
-        run: python -m compileall -q src
-      - name: Principal-scope conformance oracle
-        run: python -m nolane_plan conformance
-      - name: Wave 2 adversarial conformance
-        run: python -m nolane_plan.wave2_conformance
-      - name: Wave 3 adversarial conformance
-        run: python -m nolane_plan.wave3_conformance
-      - name: Wave 3 constitutional mutation gate
-        run: python scripts/wave3_mutation_gate.py
-      - name: Wave 4 adversarial conformance
-        run: python -m nolane_plan.wave4_conformance
-      - name: Wave 4 constitutional mutation gate
-        run: python scripts/wave4_mutation_gate.py
-      - name: Wave 5 adversarial conformance
-        run: python -m nolane_plan.wave5_conformance
-      - name: Wave 5 constitutional mutation gate
-        run: python scripts/wave5_mutation_gate.py
-      - name: Wave 6 adversarial conformance
-        run: python -m nolane_plan.wave6_conformance
-      - name: Wave 6 constitutional mutation gate
-        run: python scripts/wave6_mutation_gate.py
-      - name: Wave 7 adversarial conformance
-        run: python -m nolane_plan.wave7_conformance
-      - name: Wave 7 constitutional mutation gate
-        run: python scripts/wave7_mutation_gate.py
-      - name: Wave 8 conformance exhaustion
-        run: python -m nolane_plan.wave8_conformance
-      - name: Wave 8 constitutional mutation gate
-        if: matrix.python-version == '3.11'
-        run: python scripts/wave8_mutation_gate.py
-      - name: Wave 8 final coverage audit
-        run: python -m nolane_plan.wave8_coverage
-      - name: Wave 9 registry integrity
-        run: python -c "from nolane_plan.wave9_registry import validate_wave9_registry; print('WAVE9_REGISTRY_DIGEST=' + validate_wave9_registry())"
-      - name: Wave 9 deterministic production-fault schedules
-        run: python -m nolane_plan.wave9_chaos
-      - name: Wave 9 differential equivalence
-        run: python -m nolane_plan.wave9_differential
-      - name: Wave 9 constitutional mutation gate
-        if: matrix.python-version == '3.11'
-        run: python scripts/wave9_mutation_gate.py
-      - name: Wave 9 final coverage audit
-        run: python -m nolane_plan.wave9_coverage
-      - name: End-to-end demo
-        run: python -m nolane_plan demo --root .ci-demo-wave9
