@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+# TDD RED: this contract is committed before the Wave-9 registry implementation.
 from nolane_plan.wave9_registry import (
     WAVE9_CORE_INVARIANT_IDS,
     WAVE9_COVERAGE_INVARIANT_IDS,
