@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 import unittest
 from pathlib import Path
 
@@ -14,8 +15,10 @@ class Wave9MutationGateTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("wave9_mutation_gate", SCRIPT)
         if spec is None or spec.loader is None:
             raise RuntimeError("cannot load Wave-9 mutation gate")
-        cls.module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(cls.module)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        cls.module = module
 
     def test_catalog_freezes_exact_twelve_constitutional_mutants(self) -> None:
         mutations = self.module.MUTATIONS
