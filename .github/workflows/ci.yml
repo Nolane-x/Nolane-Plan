@@ -65,5 +65,16 @@ jobs:
         run: python scripts/wave8_mutation_gate.py
       - name: Wave 8 final coverage audit
         run: python -m nolane_plan.wave8_coverage
+      - name: Wave 9 registry integrity
+        run: python -c "from nolane_plan.wave9_registry import validate_wave9_registry; print('WAVE9_REGISTRY_DIGEST=' + validate_wave9_registry())"
+      - name: Wave 9 deterministic production-fault schedules
+        run: python -m nolane_plan.wave9_chaos
+      - name: Wave 9 differential equivalence
+        run: python -m nolane_plan.wave9_differential
+      - name: Wave 9 constitutional mutation gate
+        if: matrix.python-version == '3.11'
+        run: python scripts/wave9_mutation_gate.py
+      - name: Wave 9 final coverage audit
+        run: python -m nolane_plan.wave9_coverage
       - name: End-to-end demo
-        run: python -m nolane_plan demo --root .ci-demo-wave8
+        run: python -m nolane_plan demo --root .ci-demo-wave9
