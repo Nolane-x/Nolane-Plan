@@ -62,6 +62,11 @@ class Wave9MutationGateTests(unittest.TestCase):
         }
         self.assertEqual({row.name for row in self.module.MUTATIONS}, expected)
 
+    def test_source_deletion_before_switch_durability_mutant_is_a_targeted_kill(self) -> None:
+        mutation = next(row for row in self.module.MUTATIONS if row.mutant_id == "X05")
+        outcome, detail = self.module.run_mutation(mutation)
+        self.assertEqual(outcome, self.module.ProbeOutcome.KILLED, detail)
+
 
 if __name__ == "__main__":
     unittest.main()
